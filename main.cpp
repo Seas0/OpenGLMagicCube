@@ -155,7 +155,7 @@ const glm::vec3 cubeOriginPositions[] = {
 
 // model matrixs
 glm::mat4 cubeModel[27];
-int index[3][3][3] = { 0 };
+int cubeIndex[3][3][3] = { 0 };
 
 enum editSection
 {
@@ -221,8 +221,8 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader ourShader(".\\resource\\shader\\vertexShader.glsl",
-                     ".\\resource\\shader\\fragmentShader.glsl");
+    Shader ourShader("./resource/shader/vertexShader.glsl",
+                     "./resource/shader/fragmentShader.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -263,7 +263,7 @@ int main()
     // load image, create texture and generate mipmaps
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    unsigned char* data = stbi_load(".\\resource\\texture\\wall.jpg", &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load("./resource/texture/wall.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -285,7 +285,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // load image, create texture and generate mipmaps
-    data = stbi_load(".\\resource\\texture\\awesomeface.png", &width, &height, &nrChannels, 0);
+    data = stbi_load("./resource/texture/awesomeface.png", &width, &height, &nrChannels, 0);
     if (data)
     {
         // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
@@ -311,7 +311,7 @@ int main()
         {
             for (int i = 0; i < 3; ++i)
             {
-                index[i][j][k] = i + k * 3 + j * 3 * 3;
+                cubeIndex[i][j][k] = i + k * 3 + j * 3 * 3;
             }
         }
     }
@@ -320,7 +320,7 @@ int main()
     for (int j = 0; j < 3; ++j)
         for (int k = 0; k < 3; ++k)
             for (int i = 0; i < 3; ++i)
-                cubeModel[index[i][j][k]] = glm::translate(glm::mat4(1.0f), ((glm::vec3*)cubeOriginPositions)[index[i][j][k]]);
+                cubeModel[cubeIndex[i][j][k]] = glm::translate(glm::mat4(1.0f), ((glm::vec3*)cubeOriginPositions)[cubeIndex[i][j][k]]);
 
     nowEditing = NONE;
     nowRotate = STOP;
@@ -402,14 +402,14 @@ int main()
                     if (j + 1 == nowEditing || k + 1 == nowEditing >> 2 || i + 1 == nowEditing >> 4)
                     {
                         ourShader.setVec3("mask", glm::vec3(-0.5f, -0.5f, 1.0f));
-                        model = cubeModel[index[i][j][k]];
+                        model = cubeModel[cubeIndex[i][j][k]];
                         if (nowRotate)
-                            model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector) * cubeModel[index[i][j][k]];
+                            model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector) * cubeModel[cubeIndex[i][j][k]];
                     }
                     else
                     {
                         ourShader.setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
-                        model = cubeModel[index[i][j][k]];
+                        model = cubeModel[cubeIndex[i][j][k]];
                     }
 
                     ourShader.setMat4("model", model);
@@ -531,30 +531,30 @@ void indexRedefine()
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
             {
-                originLayIndex[i][j] = index[i][editingStage][j];
-                cubeModel[index[i][editingStage][j]] = glm::rotate(glm::mat4(1.0f), nowRotate*(float)glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * cubeModel[index[i][editingStage][j]];
+                originLayIndex[i][j] = cubeIndex[i][editingStage][j];
+                cubeModel[cubeIndex[i][editingStage][j]] = glm::rotate(glm::mat4(1.0f), nowRotate*(float)glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * cubeModel[cubeIndex[i][editingStage][j]];
             }
         if (nowRotate == CLOCK)
         {
-            index[0][editingStage][0] = originLayIndex[2][0];
-            index[0][editingStage][1] = originLayIndex[1][0];
-            index[0][editingStage][2] = originLayIndex[0][0];
-            index[1][editingStage][0] = originLayIndex[2][1];
-            index[1][editingStage][2] = originLayIndex[0][1];
-            index[2][editingStage][0] = originLayIndex[2][2];
-            index[2][editingStage][1] = originLayIndex[1][2];
-            index[2][editingStage][2] = originLayIndex[0][2];
+            cubeIndex[0][editingStage][0] = originLayIndex[2][0];
+            cubeIndex[0][editingStage][1] = originLayIndex[1][0];
+            cubeIndex[0][editingStage][2] = originLayIndex[0][0];
+            cubeIndex[1][editingStage][0] = originLayIndex[2][1];
+            cubeIndex[1][editingStage][2] = originLayIndex[0][1];
+            cubeIndex[2][editingStage][0] = originLayIndex[2][2];
+            cubeIndex[2][editingStage][1] = originLayIndex[1][2];
+            cubeIndex[2][editingStage][2] = originLayIndex[0][2];
         }
         else
         {
-            index[0][editingStage][0] = originLayIndex[0][2];
-            index[0][editingStage][1] = originLayIndex[1][2];
-            index[0][editingStage][2] = originLayIndex[2][2];
-            index[1][editingStage][0] = originLayIndex[0][1];
-            index[1][editingStage][2] = originLayIndex[2][1];
-            index[2][editingStage][0] = originLayIndex[0][0];
-            index[2][editingStage][1] = originLayIndex[1][0];
-            index[2][editingStage][2] = originLayIndex[2][0];
+            cubeIndex[0][editingStage][0] = originLayIndex[0][2];
+            cubeIndex[0][editingStage][1] = originLayIndex[1][2];
+            cubeIndex[0][editingStage][2] = originLayIndex[2][2];
+            cubeIndex[1][editingStage][0] = originLayIndex[0][1];
+            cubeIndex[1][editingStage][2] = originLayIndex[2][1];
+            cubeIndex[2][editingStage][0] = originLayIndex[0][0];
+            cubeIndex[2][editingStage][1] = originLayIndex[1][0];
+            cubeIndex[2][editingStage][2] = originLayIndex[2][0];
         }
         break;
     case Z_BACK_SECTION:
@@ -564,30 +564,30 @@ void indexRedefine()
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
             {
-                originLayIndex[i][j] = index[i][j][editingStage];
-                cubeModel[index[i][j][editingStage]] = glm::rotate(glm::mat4(1.0f), nowRotate * (float)glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * cubeModel[index[i][j][editingStage]];
+                originLayIndex[i][j] = cubeIndex[i][j][editingStage];
+                cubeModel[cubeIndex[i][j][editingStage]] = glm::rotate(glm::mat4(1.0f), nowRotate * (float)glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * cubeModel[cubeIndex[i][j][editingStage]];
             }
         if (nowRotate == CLOCK)
         {
-            index[0][0][editingStage] = originLayIndex[0][2];
-            index[0][1][editingStage] = originLayIndex[1][2];
-            index[0][2][editingStage] = originLayIndex[2][2];
-            index[1][0][editingStage] = originLayIndex[0][1];
-            index[1][2][editingStage] = originLayIndex[2][1];
-            index[2][0][editingStage] = originLayIndex[0][0];
-            index[2][1][editingStage] = originLayIndex[1][0];
-            index[2][2][editingStage] = originLayIndex[2][0];
+            cubeIndex[0][0][editingStage] = originLayIndex[0][2];
+            cubeIndex[0][1][editingStage] = originLayIndex[1][2];
+            cubeIndex[0][2][editingStage] = originLayIndex[2][2];
+            cubeIndex[1][0][editingStage] = originLayIndex[0][1];
+            cubeIndex[1][2][editingStage] = originLayIndex[2][1];
+            cubeIndex[2][0][editingStage] = originLayIndex[0][0];
+            cubeIndex[2][1][editingStage] = originLayIndex[1][0];
+            cubeIndex[2][2][editingStage] = originLayIndex[2][0];
         }
         else
         {
-            index[0][0][editingStage] = originLayIndex[2][0];
-            index[0][1][editingStage] = originLayIndex[1][0];
-            index[0][2][editingStage] = originLayIndex[0][0];
-            index[1][0][editingStage] = originLayIndex[2][1];
-            index[1][2][editingStage] = originLayIndex[0][1];
-            index[2][0][editingStage] = originLayIndex[2][2];
-            index[2][1][editingStage] = originLayIndex[1][2];
-            index[2][2][editingStage] = originLayIndex[0][2];
+            cubeIndex[0][0][editingStage] = originLayIndex[2][0];
+            cubeIndex[0][1][editingStage] = originLayIndex[1][0];
+            cubeIndex[0][2][editingStage] = originLayIndex[0][0];
+            cubeIndex[1][0][editingStage] = originLayIndex[2][1];
+            cubeIndex[1][2][editingStage] = originLayIndex[0][1];
+            cubeIndex[2][0][editingStage] = originLayIndex[2][2];
+            cubeIndex[2][1][editingStage] = originLayIndex[1][2];
+            cubeIndex[2][2][editingStage] = originLayIndex[0][2];
         }  
         break;
     case X_LEFT_SECTION:
@@ -597,30 +597,30 @@ void indexRedefine()
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
             {
-                originLayIndex[i][j] = index[editingStage][i][j];
-                cubeModel[index[editingStage][i][j]] = glm::rotate(glm::mat4(1.0f), nowRotate * (float)glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * cubeModel[index[editingStage][i][j]];
+                originLayIndex[i][j] = cubeIndex[editingStage][i][j];
+                cubeModel[cubeIndex[editingStage][i][j]] = glm::rotate(glm::mat4(1.0f), nowRotate * (float)glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * cubeModel[cubeIndex[editingStage][i][j]];
             }
         if (nowRotate == CLOCK)
         {
-            index[editingStage][0][0] = originLayIndex[0][2];
-            index[editingStage][0][1] = originLayIndex[1][2];
-            index[editingStage][0][2] = originLayIndex[2][2];
-            index[editingStage][1][0] = originLayIndex[0][1];
-            index[editingStage][1][2] = originLayIndex[2][1];
-            index[editingStage][2][0] = originLayIndex[0][0];
-            index[editingStage][2][1] = originLayIndex[1][0];
-            index[editingStage][2][2] = originLayIndex[2][0];
+            cubeIndex[editingStage][0][0] = originLayIndex[0][2];
+            cubeIndex[editingStage][0][1] = originLayIndex[1][2];
+            cubeIndex[editingStage][0][2] = originLayIndex[2][2];
+            cubeIndex[editingStage][1][0] = originLayIndex[0][1];
+            cubeIndex[editingStage][1][2] = originLayIndex[2][1];
+            cubeIndex[editingStage][2][0] = originLayIndex[0][0];
+            cubeIndex[editingStage][2][1] = originLayIndex[1][0];
+            cubeIndex[editingStage][2][2] = originLayIndex[2][0];
         }
         else
         {
-            index[editingStage][0][0] = originLayIndex[2][0];
-            index[editingStage][0][1] = originLayIndex[1][0];
-            index[editingStage][0][2] = originLayIndex[0][0];
-            index[editingStage][1][0] = originLayIndex[2][1];
-            index[editingStage][1][2] = originLayIndex[0][1];
-            index[editingStage][2][0] = originLayIndex[2][2];
-            index[editingStage][2][1] = originLayIndex[1][2];
-            index[editingStage][2][2] = originLayIndex[0][2];
+            cubeIndex[editingStage][0][0] = originLayIndex[2][0];
+            cubeIndex[editingStage][0][1] = originLayIndex[1][0];
+            cubeIndex[editingStage][0][2] = originLayIndex[0][0];
+            cubeIndex[editingStage][1][0] = originLayIndex[2][1];
+            cubeIndex[editingStage][1][2] = originLayIndex[0][1];
+            cubeIndex[editingStage][2][0] = originLayIndex[2][2];
+            cubeIndex[editingStage][2][1] = originLayIndex[1][2];
+            cubeIndex[editingStage][2][2] = originLayIndex[0][2];
         }
         break;
     default:
