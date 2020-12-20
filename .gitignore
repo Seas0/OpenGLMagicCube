@@ -1,0 +1,11 @@
+# ignore build file
+*.exe
+*.obj
+
+# ignore build directory
+Debug/
+Release/
+build/
+
+# ignore Visual Studio (R) files
+.vs/
