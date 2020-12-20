@@ -9,3 +9,6 @@ build/
 
 # ignore Visual Studio (R) files
 .vs/
+
+# ignore all documents
+docs/
