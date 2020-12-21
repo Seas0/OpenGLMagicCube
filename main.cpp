@@ -1,7 +1,7 @@
 /* Project Name: OpenGL Magic Cube
 *  Author: Seas0 (Liu Sichen)
 *  Create Date: 2020/11/15
-*  Last Modify Date: 2020/12/15
+*  Last Modify Date: 2020/12/21
 *  Comment: This Project uses the Core-profile of OpenGL above 3.3 instead of Immediate mode,
 *           So may not be able to run on some old System.
 */
@@ -22,31 +22,51 @@
 *  [.] Apply texture on the cube
 *  --- May be more features ?
 */
+
 #define STB_IMAGE_IMPLEMENTATION
-#include <glad/glad.h>
+
 // GLAD: A simple library to initialize OpenGL function
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+
 // GLFW: A simple library to manage OpenGL context
+#include <GLFW/glfw3.h>
+
+// GLM:  A library for matrix calculate & etc.
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-// GLM : A library for matrix calculate & etc.
+
+// stb_image: A simple library for texture loading
 #include <stb_image.h>
 
+// some standard headers for basic I/O
 #include <iostream>
 #include <fstream>
 #include <cstdint>
 #include <string>
+
+// custom headers
+
+// load & compile & link shader program
 #include "source/shaderLoader.h"
+
+// generate view & projection matrix to implement camera control
 #include "source/cameraSystem.h"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow* window);
+typedef unsigned char byte;
+
+// call back functions that handle event
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+
+// to avoid keyboard call back flaws
+void processInput(GLFWwindow *window);
+
+// mantain index array to loacate each single cube
 void indexRedefine();
 
-// settings
+// resolution settings
 unsigned int windowWidth = 800, windowHeight = 600;
 
 // camera
@@ -56,106 +76,105 @@ float lastY = windowHeight / 2.0f;
 bool firstMouse = true;
 
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
+float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
 // model data
 const float halfSideLen = 0.1f;
 const float sideLen = halfSideLen * 2;
-const float vertices[] = {
-    // back face 
-    -halfSideLen, -halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-     halfSideLen, -halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
-     halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-     halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-    -halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-    // front face 
-    -halfSideLen, -halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-     halfSideLen, -halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-     halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-     halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-    -halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen,  halfSideLen,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-    // left face 
-    -halfSideLen,  halfSideLen,  halfSideLen, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-    -halfSideLen,  halfSideLen, -halfSideLen, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen,  halfSideLen, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-    -halfSideLen,  halfSideLen,  halfSideLen, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-    // right face 
-     halfSideLen,  halfSideLen,  halfSideLen,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-     halfSideLen,  halfSideLen, -halfSideLen,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-     halfSideLen, -halfSideLen, -halfSideLen,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-     halfSideLen, -halfSideLen, -halfSideLen,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-     halfSideLen, -halfSideLen,  halfSideLen,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-     halfSideLen,  halfSideLen,  halfSideLen,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-     // bottom face 
-    -halfSideLen, -halfSideLen, -halfSideLen,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-     halfSideLen, -halfSideLen, -halfSideLen,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-     halfSideLen, -halfSideLen,  halfSideLen,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-     halfSideLen, -halfSideLen,  halfSideLen,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-    -halfSideLen, -halfSideLen,  halfSideLen,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-    // top face 
-    -halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-     halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-     halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-     halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-    -halfSideLen,  halfSideLen,  halfSideLen,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-    -halfSideLen,  halfSideLen, -halfSideLen,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f
-};
+const float singleCubeVertices[] = {
+    // back face
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+    // front face
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    // left face
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 1.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 0.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
+    // right face
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+    // bottom face
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    // top face
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f};
 
 // model movement
-const float ANGULAR_SPEED = 50.0f;
+const float ANGULAR_SPEED = 90.0f;
 
 // world space positions of our cubes
 const glm::vec3 cubeOriginPositions[] = {
     // layer 0
     // // slice 0
     glm::vec3(-sideLen, -sideLen, -sideLen),
-    glm::vec3( 0.0f, -sideLen, -sideLen),
-    glm::vec3( sideLen, -sideLen, -sideLen),
+    glm::vec3(0.0f, -sideLen, -sideLen),
+    glm::vec3(sideLen, -sideLen, -sideLen),
     // // slice 1
-    glm::vec3(-sideLen, -sideLen,  0.0f),
-    glm::vec3( 0.0f, -sideLen,  0.0f),
-    glm::vec3( sideLen, -sideLen,  0.0f),
+    glm::vec3(-sideLen, -sideLen, 0.0f),
+    glm::vec3(0.0f, -sideLen, 0.0f),
+    glm::vec3(sideLen, -sideLen, 0.0f),
     // // slice 2
-    glm::vec3(-sideLen, -sideLen,  sideLen),
-    glm::vec3( 0.0f, -sideLen,  sideLen),
-    glm::vec3( sideLen, -sideLen,  sideLen),
+    glm::vec3(-sideLen, -sideLen, sideLen),
+    glm::vec3(0.0f, -sideLen, sideLen),
+    glm::vec3(sideLen, -sideLen, sideLen),
     // layer 1
     // // slice 0
-    glm::vec3(-sideLen,  0.0f, -sideLen),
-    glm::vec3( 0.0f,  0.0f, -sideLen),
-    glm::vec3( sideLen,  0.0f, -sideLen),
+    glm::vec3(-sideLen, 0.0f, -sideLen),
+    glm::vec3(0.0f, 0.0f, -sideLen),
+    glm::vec3(sideLen, 0.0f, -sideLen),
     // // slice 1
-    glm::vec3(-sideLen,  0.0f,  0.0f),
-    glm::vec3( 0.0f,  0.0f,  0.0f),
-    glm::vec3( sideLen,  0.0f,  0.0f),
+    glm::vec3(-sideLen, 0.0f, 0.0f),
+    glm::vec3(0.0f, 0.0f, 0.0f),
+    glm::vec3(sideLen, 0.0f, 0.0f),
     // // slice 2
-    glm::vec3(-sideLen,  0.0f,  sideLen),
-    glm::vec3( 0.0f,  0.0f,  sideLen),
-    glm::vec3( sideLen,  0.0f,  sideLen),
+    glm::vec3(-sideLen, 0.0f, sideLen),
+    glm::vec3(0.0f, 0.0f, sideLen),
+    glm::vec3(sideLen, 0.0f, sideLen),
     // layer 2
     // // slice 0
-    glm::vec3(-sideLen,  sideLen, -sideLen),
-    glm::vec3( 0.0f,  sideLen, -sideLen),
-    glm::vec3( sideLen,  sideLen, -sideLen),
+    glm::vec3(-sideLen, sideLen, -sideLen),
+    glm::vec3(0.0f, sideLen, -sideLen),
+    glm::vec3(sideLen, sideLen, -sideLen),
     // // slice 1
-    glm::vec3(-sideLen,  sideLen,  0.0f),
-    glm::vec3( 0.0f,  sideLen,  0.0f),
-    glm::vec3( sideLen,  sideLen,  0.0f),
+    glm::vec3(-sideLen, sideLen, 0.0f),
+    glm::vec3(0.0f, sideLen, 0.0f),
+    glm::vec3(sideLen, sideLen, 0.0f),
     // // slice 2
-    glm::vec3(-sideLen,  sideLen,  sideLen),
-    glm::vec3( 0.0f,  sideLen,  sideLen),
-    glm::vec3( sideLen,  sideLen,  sideLen),
+    glm::vec3(-sideLen, sideLen, sideLen),
+    glm::vec3(0.0f, sideLen, sideLen),
+    glm::vec3(sideLen, sideLen, sideLen),
 };
 
 // model matrixs
 glm::mat4 cubeModel[27];
-int cubeIndex[3][3][3] = { 0 };
+int cubeIndex[3][3][3] = {0};
 
 enum editSection
 {
@@ -169,13 +188,13 @@ enum editSection
     X_LEFT_SECTION = 16,
     X_MIDDLE_SECTION = 32,
     X_RIGHT_SECTION = 48
-}nowEditing;
+} nowEditing;
 enum rotateDirection
 {
     STOP = 0,
     CLOCK = 1,
     CONTC = -1
-}nowRotate;
+} nowRotate;
 
 int main()
 {
@@ -192,7 +211,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(windowWidth, windowHeight, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -219,90 +238,121 @@ int main()
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
-    // build and compile our shader zprogram
+    // build and compile our shader program
     // ------------------------------------
-    Shader ourShader("./resource/shader/vertexShader.glsl",
-                     "./resource/shader/fragmentShader.glsl");
+    Shader textureShader("./resource/shader/vertexShader.glsl",
+                         "./resource/shader/fragmentShader.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    
-    
-    unsigned int VBO, VAO;
+    GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(singleCubeVertices), singleCubeVertices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    // relative attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
+
+    // color attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
     // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // load and create a texture 
+    // load and create a texture
     // -------------------------
-    unsigned int texture1, texture2;
-    // texture 1
-    // ---------
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    unsigned char* data = stbi_load("./resource/texture/wall.jpg", &width, &height, &nrChannels, 0);
-    if (data)
+    GLuint texture1, texture2, cubeTexture[27];
+    glGenTextures(27, cubeTexture);
+    for (int i = 0; i < 27; ++i)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, cubeTexture[i]);
+
+        // set the texture wrapping parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        // set texture filtering parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        // load image, create texture and generate mipmaps
+        std::stringstream path;
+        int width, height, nrChannels;
+        stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+        path << "./resource/texture/"
+             << "cube" << ((i < 10) ? "0" : "") << i << ".png";
+        byte *data = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        else
+        {
+            std::cout << "Failed to load texture " << path.str() << std::endl;
+        }
+        stbi_image_free(data);
     }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-    // texture 2
-    // ---------
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-    data = stbi_load("./resource/texture/awesomeface.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    // // texture 1
+    // // ---------
+    // glGenTextures(1, &texture1);
+    // glBindTexture(GL_TEXTURE_2D, texture1);
+    // // set the texture wrapping parameters
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // // set texture filtering parameters
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // // load image, create texture and generate mipmaps
+    // int width, height, nrChannels;
+    // stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    // byte *data = stbi_load("./resource/texture/wall.jpg", &width, &height, &nrChannels, 0);
+    // if (data)
+    // {
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    //     glGenerateMipmap(GL_TEXTURE_2D);
+    // }
+    // else
+    // {
+    //     std::cout << "Failed to load texture" << std::endl;
+    // }
+    // stbi_image_free(data);
+    // // texture 2
+    // // ---------
+    // glGenTextures(1, &texture2);
+    // glBindTexture(GL_TEXTURE_2D, texture2);
+    // // set the texture wrapping parameters
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // // set texture filtering parameters
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // // load image, create texture and generate mipmaps
+    // data = stbi_load("./resource/texture/awesomeface.png", &width, &height, &nrChannels, 0);
+    // if (data)
+    // {
+    //     // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    //     glGenerateMipmap(GL_TEXTURE_2D);
+    // }
+    // else
+    // {
+    //     std::cout << "Failed to load texture" << std::endl;
+    // }
+    // stbi_image_free(data);
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    ourShader.use();
-    ourShader.setInt("texture1", 0);
-    ourShader.setInt("texture2", 1);
+    textureShader.use();
+    textureShader.setInt("texture", 0);
+    // textureShader.setInt("texture2", 1);
 
     // gen origin index
     for (int j = 0; j < 3; ++j)
@@ -320,11 +370,12 @@ int main()
     for (int j = 0; j < 3; ++j)
         for (int k = 0; k < 3; ++k)
             for (int i = 0; i < 3; ++i)
-                cubeModel[cubeIndex[i][j][k]] = glm::translate(glm::mat4(1.0f), ((glm::vec3*)cubeOriginPositions)[cubeIndex[i][j][k]]);
+                cubeModel[cubeIndex[i][j][k]] = glm::translate(glm::mat4(1.0f), ((glm::vec3 *)cubeOriginPositions)[cubeIndex[i][j][k]]);
 
     nowEditing = NONE;
     nowRotate = STOP;
     double angle = 0;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -334,6 +385,7 @@ int main()
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        //std::cout << "FPS:" << 1/deltaTime << std::endl;
 
         // input
         // -----
@@ -345,36 +397,36 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, texture1);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, texture2);
 
         // activate shader
-        ourShader.use();
+        textureShader.use();
 
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)windowWidth / (float)windowHeight, 0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
+        textureShader.setMat4("projection", projection);
 
         // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("view", view);
+        textureShader.setMat4("view", view);
 
-        // render boxes
+        // render cubes
         glBindVertexArray(VAO);
 
         glm::vec3 rotateVector = glm::vec3(0.0f);
         // process rotation matrix
         if (nowEditing && nowRotate)
         {
-            if (abs(angle += ((float)nowRotate) * ANGULAR_SPEED * deltaTime) > 90.0f)
+            if (abs(angle += ((float)nowRotate) * (sin(glm::radians(abs(angle)) * 2.0) + 0.1) * ANGULAR_SPEED * deltaTime) > 90.0f)
             {
                 angle = 0;
                 indexRedefine();
                 nowRotate = STOP;
             }
-            switch(nowEditing)
+            switch (nowEditing)
             {
             case Y_BOTTOM_SECTION:
             case Y_MIDDLE_SECTION:
@@ -397,22 +449,24 @@ int main()
             for (int k = 0; k < 3; ++k)
                 for (int i = 0; i < 3; ++i)
                 {
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, cubeTexture[i]);
                     // calculate the model matrix for each object and pass it to shader before drawing
                     glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
                     if (j + 1 == nowEditing || k + 1 == nowEditing >> 2 || i + 1 == nowEditing >> 4)
                     {
-                        ourShader.setVec3("mask", glm::vec3(-0.5f, -0.5f, 1.0f));
+                        textureShader.setVec3("mask", glm::vec3(-0.5f, -0.5f, 1.0f));
                         model = cubeModel[cubeIndex[i][j][k]];
                         if (nowRotate)
                             model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector) * cubeModel[cubeIndex[i][j][k]];
                     }
                     else
                     {
-                        ourShader.setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
+                        textureShader.setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
                         model = cubeModel[cubeIndex[i][j][k]];
                     }
 
-                    ourShader.setMat4("model", model);
+                    textureShader.setMat4("model", model);
 
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
@@ -436,7 +490,7 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
+void processInput(GLFWwindow *window)
 {
     float originSpeed = camera.MovementSpeed;
     int operateFlag = 0;
@@ -483,9 +537,9 @@ void processInput(GLFWwindow* window)
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
     windowWidth = width;
@@ -494,7 +548,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
     if (firstMouse)
     {
@@ -514,14 +568,14 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
 }
 
 void indexRedefine()
 {
-    int originLayIndex[3][3],editingStage;
+    int originLayIndex[3][3], editingStage;
     switch (nowEditing)
     {
     case Y_BOTTOM_SECTION:
@@ -532,7 +586,7 @@ void indexRedefine()
             for (int j = 0; j < 3; ++j)
             {
                 originLayIndex[i][j] = cubeIndex[i][editingStage][j];
-                cubeModel[cubeIndex[i][editingStage][j]] = glm::rotate(glm::mat4(1.0f), nowRotate*(float)glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * cubeModel[cubeIndex[i][editingStage][j]];
+                cubeModel[cubeIndex[i][editingStage][j]] = glm::rotate(glm::mat4(1.0f), nowRotate * (float)glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * cubeModel[cubeIndex[i][editingStage][j]];
             }
         if (nowRotate == CLOCK)
         {
@@ -588,7 +642,7 @@ void indexRedefine()
             cubeIndex[2][0][editingStage] = originLayIndex[2][2];
             cubeIndex[2][1][editingStage] = originLayIndex[1][2];
             cubeIndex[2][2][editingStage] = originLayIndex[0][2];
-        }  
+        }
         break;
     case X_LEFT_SECTION:
     case X_MIDDLE_SECTION:
