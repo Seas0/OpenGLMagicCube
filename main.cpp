@@ -83,48 +83,49 @@ float lastFrame = 0.0f;
 const float halfSideLen = 0.1f;
 const float sideLen = halfSideLen * 2;
 const float singleCubeVertices[] = {
+    //              Position                        Color          Texture
     // back face
-    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.5f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
     // front face
-    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
+    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.5f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
     // left face
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 1.0f,
-    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 0.0f, 0.0f,
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.5f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
     // right face
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 1.0f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
     // bottom face
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 0.5f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
     // top face
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f,
     halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f};
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 0.5f,
+    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f};
 
 // model movement
 const float ANGULAR_SPEED = 90.0f;
@@ -263,98 +264,32 @@ int main()
     glEnableVertexAttribArray(1);
 
     // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // load and create a texture
+    // load a texture
     // -------------------------
     GLuint texture1, texture2, cubeTexture[27];
+    byte *textureSource[6];
     glGenTextures(27, cubeTexture);
-    for (int i = 0; i < 27; ++i)
+    for (int i = 0; i < 6; ++i)
     {
-        glBindTexture(GL_TEXTURE_2D, cubeTexture[i]);
-
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        // load image, create texture and generate mipmaps
         std::stringstream path;
         int width, height, nrChannels;
         stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
         path << "./resource/texture/"
              << "cube" << ((i < 10) ? "0" : "") << i << ".png";
-        byte *data = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
+        textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
+        if (!textureSource[i])
             std::cout << "Failed to load texture " << path.str() << std::endl;
-        }
-        stbi_image_free(data);
     }
-    // // texture 1
-    // // ---------
-    // glGenTextures(1, &texture1);
-    // glBindTexture(GL_TEXTURE_2D, texture1);
-    // // set the texture wrapping parameters
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // // set texture filtering parameters
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // // load image, create texture and generate mipmaps
-    // int width, height, nrChannels;
-    // stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    // byte *data = stbi_load("./resource/texture/wall.jpg", &width, &height, &nrChannels, 0);
-    // if (data)
-    // {
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    //     glGenerateMipmap(GL_TEXTURE_2D);
-    // }
-    // else
-    // {
-    //     std::cout << "Failed to load texture" << std::endl;
-    // }
-    // stbi_image_free(data);
-    // // texture 2
-    // // ---------
-    // glGenTextures(1, &texture2);
-    // glBindTexture(GL_TEXTURE_2D, texture2);
-    // // set the texture wrapping parameters
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // // set texture filtering parameters
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // // load image, create texture and generate mipmaps
-    // data = stbi_load("./resource/texture/awesomeface.png", &width, &height, &nrChannels, 0);
-    // if (data)
-    // {
-    //     // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    //     glGenerateMipmap(GL_TEXTURE_2D);
-    // }
-    // else
-    // {
-    //     std::cout << "Failed to load texture" << std::endl;
-    // }
-    // stbi_image_free(data);
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
     textureShader.use();
-    textureShader.setInt("texture", 0);
-    // textureShader.setInt("texture2", 1);
+    textureShader.setInt("Texture", 0);
 
-    // gen origin index
+    // gen origin index & split texture & create texture
     for (int j = 0; j < 3; ++j)
     {
         for (int k = 0; k < 3; ++k)
@@ -362,9 +297,91 @@ int main()
             for (int i = 0; i < 3; ++i)
             {
                 cubeIndex[i][j][k] = i + k * 3 + j * 3 * 3;
+                glBindTexture(GL_TEXTURE_2D, cubeTexture[cubeIndex[i][j][k]]);
+
+                // set the texture wrapping parameters
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+                // set texture filtering parameters
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                byte *tmp = (byte *)malloc(1536 * 1024 * 4);
+                memset(tmp, 0xef, 512 * 4 * 512 * 6);
+
+                // back face
+                if (k == 0)
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + u * 1536 * 4,
+                               textureSource[0] + j * 1536 * 4 * 512 + (2 - i) * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+
+                // front face
+                if (k == 2)
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + 512 * 4 + u * 1536 * 4,
+                               textureSource[1] + j * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+
+                // left face
+                if (i == 0)
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + 512 * 2 * 4 + u * 1536 * 4,
+                               textureSource[2] + (2 - j) * 1536 * 4 * 512 + (2 - k) * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+
+                // right face
+                if (i == 2)
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + 1536 * 4 * 512 + u * 1536 * 4,
+                               textureSource[3] + j * 1536 * 4 * 512 + (2 - k) * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+
+                // bottom face
+                if (j == 0)
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + 1536 * 4 * 512 + 512 * 4 + u * 1536 * 4,
+                               textureSource[4] + k * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+
+                // top face
+                {
+                    for (int u = 0; u < 512; ++u)
+                    {
+                        memcpy(tmp + 1536 * 4 * 512 + 512 * 2 * 4 + u * 1536 * 4,
+                               textureSource[5] + (2 - k) * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                               512 * 4);
+                    }
+                }
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1536, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                free(tmp);
             }
         }
     }
+
+    for (int i = 0; i < 6; ++i)
+        stbi_image_free(textureSource[i]);
 
     // gen origin model matrix
     for (int j = 0; j < 3; ++j)
@@ -450,7 +467,8 @@ int main()
                 for (int i = 0; i < 3; ++i)
                 {
                     glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, cubeTexture[i]);
+                    glBindTexture(GL_TEXTURE_2D, cubeTexture[cubeIndex[i][j][k]]);
+
                     // calculate the model matrix for each object and pass it to shader before drawing
                     glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
                     if (j + 1 == nowEditing || k + 1 == nowEditing >> 2 || i + 1 == nowEditing >> 4)
