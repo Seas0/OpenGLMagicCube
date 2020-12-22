@@ -6,7 +6,7 @@
 *           So may not be able to run on some old System.
 */
 
-/* TODO List:
+/* // TODO List:
 *  [x] Initialize a window
 *  [x] Manage buffer
 *  [x] Draw a triangle
@@ -19,7 +19,11 @@
 *  [x] Pan & Rotate whole Magic Cube
 *  [x] Rotate each section of the Magic Cube
 *  [x] Draw & Control whole Magic Cube
-*  [.] Apply texture on the cube
+*  [x] Apply texture on the cube
+*  [ ] Display info text
+*  [ ] Random Shuffle
+*  [ ] Auto resume
+*  [ ] <W> Compile as Windows (TM) Screen Saver Program
 *  --- May be more features ?
 */
 
@@ -43,10 +47,12 @@
 #include <iostream>
 #include <fstream>
 #include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <ctime>
 
 // custom headers
-
+// --------------
 // load & compile & link shader program
 #include "source/shaderLoader.h"
 
@@ -56,11 +62,15 @@
 typedef unsigned char byte;
 
 // call back functions that handle event
+// -------------------------------------
+
+// reset window size vars & change viewport
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
-// to avoid keyboard call back flaws
+// use process function to check key status every frame
+// avoid keyboard call back flaws
 void processInput(GLFWwindow *window);
 
 // mantain index array to loacate each single cube
@@ -177,6 +187,7 @@ const glm::vec3 cubeOriginPositions[] = {
 glm::mat4 cubeModel[27];
 int cubeIndex[3][3][3] = {0};
 
+// status vars
 enum editSection
 {
     NONE = 0,
@@ -239,10 +250,12 @@ int main()
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
-    // build and compile our shader program
+    // build and compile shader program (texture shader & color shader)
     // ------------------------------------
     Shader textureShader("./resource/shader/vertexShader.glsl",
-                         "./resource/shader/fragmentShader.glsl");
+                         "./resource/shader/fragmentShader.glsl"),
+        colorShader("./resource/shader/vertexShader.glsl",
+                    "./resource/shader/fragmentShader.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -250,8 +263,10 @@ int main()
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
+    // bind vertex array obj to store ptr to vbo and attribs of vbo in graphic memory
     glBindVertexArray(VAO);
 
+    // bind vertex buffer obj to store vertex data in graphic memory
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(singleCubeVertices), singleCubeVertices, GL_STATIC_DRAW);
 
@@ -267,10 +282,11 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // load a texture
+    // load six texture for each face
     // -------------------------
-    GLuint texture1, texture2, cubeTexture[27];
+    GLuint cubeTexture[27];
     byte *textureSource[6];
+    bool flag = true; // texture load success flag bit
     glGenTextures(27, cubeTexture);
     for (int i = 0; i < 6; ++i)
     {
@@ -281,7 +297,10 @@ int main()
              << "cube" << ((i < 10) ? "0" : "") << i << ".png";
         textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
         if (!textureSource[i])
+        {
             std::cout << "Failed to load texture " << path.str() << std::endl;
+            flag = false;
+        }
     }
 
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
@@ -289,7 +308,10 @@ int main()
     textureShader.use();
     textureShader.setInt("Texture", 0);
 
-    // gen origin index & split texture & create texture
+    // gen origin index &
+    // gen origin model matrix &
+    // split source texture & create cube texture
+    // -------------------------------------------------
     for (int j = 0; j < 3; ++j)
     {
         for (int k = 0; k < 3; ++k)
@@ -297,6 +319,9 @@ int main()
             for (int i = 0; i < 3; ++i)
             {
                 cubeIndex[i][j][k] = i + k * 3 + j * 3 * 3;
+                cubeModel[cubeIndex[i][j][k]] =
+                    glm::translate(glm::mat4(1.0f), ((glm::vec3 *)cubeOriginPositions)[cubeIndex[i][j][k]]);
+
                 glBindTexture(GL_TEXTURE_2D, cubeTexture[cubeIndex[i][j][k]]);
 
                 // set the texture wrapping parameters
@@ -306,92 +331,101 @@ int main()
                 // set texture filtering parameters
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
                 byte *tmp = (byte *)malloc(1536 * 1024 * 4);
-                memset(tmp, 0xef, 512 * 4 * 512 * 6);
+                memset(tmp, 0xcd, 512 * 4 * 512 * 6);
 
-                // back face
-                if (k == 0)
+                // split source image into each cubes' texture
+                // (in a very rude way)
+                // TODO: make this better! (more format support, more safe, etc.)
+                if (flag)
                 {
-                    for (int u = 0; u < 512; ++u)
+                    // back face
+                    if (k == 0)
                     {
-                        memcpy(tmp + u * 1536 * 4,
-                               textureSource[0] + j * 1536 * 4 * 512 + (2 - i) * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + u * 1536 * 4,
+                                   textureSource[0] + j * 1536 * 4 * 512 + (2 - i) * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
+                    }
+
+                    // front face
+                    if (k == 2)
+                    {
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + 512 * 4 + u * 1536 * 4,
+                                   textureSource[1] + j * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
+                    }
+
+                    // left face
+                    if (i == 0)
+                    {
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + 512 * 2 * 4 + u * 1536 * 4,
+                                   textureSource[2] + j * 1536 * 4 * 512 + k * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
+                    }
+
+                    // right face
+                    if (i == 2)
+                    {
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + 1536 * 4 * 512 + u * 1536 * 4,
+                                   textureSource[3] + j * 1536 * 4 * 512 + (2 - k) * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
+                    }
+
+                    // bottom face
+                    if (j == 0)
+                    {
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + 1536 * 4 * 512 + 512 * 4 + u * 1536 * 4,
+                                   textureSource[4] + k * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
+                    }
+
+                    // top face
+                    if (j == 2)
+                    {
+                        for (int u = 0; u < 512; ++u)
+                        {
+                            memcpy(tmp + 1536 * 4 * 512 + 512 * 2 * 4 + u * 1536 * 4,
+                                   textureSource[5] + (2 - k) * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
+                                   512 * 4);
+                        }
                     }
                 }
 
-                // front face
-                if (k == 2)
-                {
-                    for (int u = 0; u < 512; ++u)
-                    {
-                        memcpy(tmp + 512 * 4 + u * 1536 * 4,
-                               textureSource[1] + j * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
-                    }
-                }
-
-                // left face
-                if (i == 0)
-                {
-                    for (int u = 0; u < 512; ++u)
-                    {
-                        memcpy(tmp + 512 * 2 * 4 + u * 1536 * 4,
-                               textureSource[2] + (2 - j) * 1536 * 4 * 512 + (2 - k) * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
-                    }
-                }
-
-                // right face
-                if (i == 2)
-                {
-                    for (int u = 0; u < 512; ++u)
-                    {
-                        memcpy(tmp + 1536 * 4 * 512 + u * 1536 * 4,
-                               textureSource[3] + j * 1536 * 4 * 512 + (2 - k) * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
-                    }
-                }
-
-                // bottom face
-                if (j == 0)
-                {
-                    for (int u = 0; u < 512; ++u)
-                    {
-                        memcpy(tmp + 1536 * 4 * 512 + 512 * 4 + u * 1536 * 4,
-                               textureSource[4] + k * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
-                    }
-                }
-
-                // top face
-                {
-                    for (int u = 0; u < 512; ++u)
-                    {
-                        memcpy(tmp + 1536 * 4 * 512 + 512 * 2 * 4 + u * 1536 * 4,
-                               textureSource[5] + (2 - k) * 1536 * 4 * 512 + i * 512 * 4 + u * 1536 * 4,
-                               512 * 4);
-                    }
-                }
+                // transfer texture to graphic mem
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1536, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+
+                // gen mipmap for scaling
                 glGenerateMipmap(GL_TEXTURE_2D);
+
+                // free temporary texture in system memory
                 free(tmp);
             }
         }
     }
 
+    // free source image in system memory
     for (int i = 0; i < 6; ++i)
         stbi_image_free(textureSource[i]);
-
-    // gen origin model matrix
-    for (int j = 0; j < 3; ++j)
-        for (int k = 0; k < 3; ++k)
-            for (int i = 0; i < 3; ++i)
-                cubeModel[cubeIndex[i][j][k]] = glm::translate(glm::mat4(1.0f), ((glm::vec3 *)cubeOriginPositions)[cubeIndex[i][j][k]]);
-
+                
     nowEditing = NONE;
     nowRotate = STOP;
-    double angle = 0;
+    float angle = 0;
 
     // render loop
     // -----------
@@ -402,22 +436,18 @@ int main()
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        // TODO: Find a efficient way to calculate & display FPS
         //std::cout << "FPS:" << 1/deltaTime << std::endl;
 
         // input
         // -----
         processInput(window);
 
-        // render
-        // ------
+        // render pure color background
+        // ----------------------------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // bind textures on corresponding texture units
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, texture1);
-        // glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, texture2);
 
         // activate shader
         textureShader.use();
@@ -466,6 +496,7 @@ int main()
             for (int k = 0; k < 3; ++k)
                 for (int i = 0; i < 3; ++i)
                 {
+                    // bind textures on corresponding texture units
                     glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, cubeTexture[cubeIndex[i][j][k]]);
 
@@ -512,10 +543,22 @@ void processInput(GLFWwindow *window)
 {
     float originSpeed = camera.MovementSpeed;
     int operateFlag = 0;
+
+    // Workflow control
+    // ----------------
+
+    // ESC for exiting program
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // Camera control
+    // --------------
+
+    // LShift for camera speed up
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera.MovementSpeed = originSpeed * 4;
+
+    // WASD for camera movement
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -524,10 +567,12 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && nowEditing)
-        nowRotate = CONTC;
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && nowEditing)
-        nowRotate = CLOCK;
+
+    // Magic Cube Manual Rotation
+    // -------------------------------------
+
+    // Num Pad Number for section activation
+    // X-axis
     if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS && !nowRotate)
         nowEditing = X_LEFT_SECTION;
     if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS && !nowRotate)
@@ -535,6 +580,7 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS && !nowRotate)
         nowEditing = X_RIGHT_SECTION;
 
+    // Y-axis
     if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS && !nowRotate)
         nowEditing = Y_BOTTOM_SECTION;
     if (glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS && !nowRotate)
@@ -542,14 +588,24 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS && !nowRotate)
         nowEditing = Y_TOP_SECTION;
 
+    // Z-axis
     if (glfwGetKey(window, GLFW_KEY_KP_7) == GLFW_PRESS && !nowRotate)
         nowEditing = Z_BACK_SECTION;
     if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS && !nowRotate)
         nowEditing = Z_MIDDLE_SECTION;
     if (glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS && !nowRotate)
         nowEditing = Z_FRONT_SECTION;
+
+    // Deactivate manual editing
     if (glfwGetKey(window, GLFW_KEY_KP_0) == GLFW_PRESS && !nowRotate)
         nowEditing = NONE;
+
+    // Q/E for section routation way
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && nowEditing)
+        nowRotate = CONTC;
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && nowEditing)
+        nowRotate = CLOCK;
+
     camera.MovementSpeed = originSpeed;
 }
 
@@ -591,9 +647,14 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
+// update index by 90 degree rotation
+// ----------------------------------
 void indexRedefine()
 {
     int originLayIndex[3][3], editingStage;
+
+    // Brute-force, not elegant
+    // TODO: use matrix tras & mirr to rotate 90 degree
     switch (nowEditing)
     {
     case Y_BOTTOM_SECTION:
