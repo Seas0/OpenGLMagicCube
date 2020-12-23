@@ -27,13 +27,12 @@
 *  [.] Optimize camera
 *  [ ] Auto camera
 *  [ ] Display info text
-*  [ ] Random Shuffle
+*  [x] Random Shuffle
+*  [ ] Lighting system
 *  [ ] Auto resume
 *  [ ] <W> Compile as Windows (TM) Screen Saver Program
 *  --- May be more features ?
 */
-
-#define STB_IMAGE_IMPLEMENTATION
 
 // GLAD: A simple library to initialize OpenGL function
 #include <glad/glad.h>
@@ -47,7 +46,11 @@
 #include <glm/gtc/type_ptr.hpp>
 
 // stb_image: A simple library for texture loading
-#include <stb_image.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+// stb_image_resize: A simple library for texture resize
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb/stb_image_resize.h>
 
 // some standard headers for basic I/O
 #include <iostream>
@@ -157,7 +160,7 @@ glm::mat4 cubeModel[27];
 int cubeIndex[3][3][3] = {0};
 
 // model movement
-float angularSpeed = 180.0f;
+float angularSpeedCoefficient = 180.0f;
 
 // world space positions of our cubes
 const glm::vec3 cubeOriginPositions[] = {
@@ -307,12 +310,12 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    // texture loading & proccessing
+    // -----------------------------
+
     // load six texture for each face
-    // -------------------------
-    GLuint cubeTexture[27];
     byte *textureSource[6];
     bool flag = true; // texture load success flag bit
-    glGenTextures(27, cubeTexture);
     for (int i = 0; i < 6; ++i)
     {
         std::stringstream path;
@@ -321,6 +324,13 @@ int main()
         path << "./resource/texture/"
              << "cube" << ((i < 10) ? "0" : "") << i << ".png";
         textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
+        if (width != 1536 || height != 1536 || nrChannels != 4)
+        {
+            byte *tmp = (byte *)malloc(1536 * 1536 * 4);
+            stbir_resize_uint8(textureSource[i], width, height, 0, tmp, 1536, 1536, 0, 4);
+            free(textureSource[i]);
+            textureSource[i] = tmp;
+        }
         if (!textureSource[i])
         {
             std::cerr << "Failed to load texture " << path.str() << std::endl;
@@ -328,8 +338,11 @@ int main()
         }
     }
 
-    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-    // -------------------------------------------------------------------------------------------
+    // gen texture for each cube
+    GLuint cubeTexture[27];
+    glGenTextures(27, cubeTexture);
+
+    // tell opengl for each sampler to which texture unit it belongs to
     textureShader.use();
     textureShader.setInt("Texture", 0);
 
@@ -338,9 +351,7 @@ int main()
     // split source texture & create cube texture
     // -------------------------------------------------
     for (int j = 0; j < 3; ++j)
-    {
         for (int k = 0; k < 3; ++k)
-        {
             for (int i = 0; i < 3; ++i)
             {
                 cubeIndex[i][j][k] = i + k * 3 + j * 3 * 3;
@@ -363,6 +374,7 @@ int main()
                 // split source image into each cubes' texture
                 // (in a very rude way)
                 // TODO: make this better! (more format support, more safe, etc.)
+                // TODO: use cubic texture
                 if (flag)
                 {
                     // back face
@@ -441,8 +453,6 @@ int main()
                 // free temporary texture in system memory
                 free(tmp);
             }
-        }
-    }
 
     // free source image in system memory
     for (int i = 0; i < 6; ++i)
@@ -474,7 +484,7 @@ int main()
 
         // random shuffle if enter random mode
         // -----------------------------------
-        angularSpeed = randomMode ? 360.0f : 180.0f;
+        angularSpeedCoefficient = randomMode ? 360.0f : 180.0f;
         if (!nowRotate && randomMode)
             randomShuffle();
 
@@ -519,7 +529,7 @@ int main()
         if (nowEditing && nowRotate)
         {
             // update angle & check if rotattion finished
-            if (abs(angle += ((float)nowRotate) * (sin(glm::radians(abs(angle)) * 2.0) + 0.1) * angularSpeed * deltaTime) > 90.0f)
+            if (abs(angle += ((float)nowRotate) * (sin(glm::radians(abs(angle)) * 2.0) + 0.1) * angularSpeedCoefficient * deltaTime) > 90.0f)
             {
                 angle = 0;
 
