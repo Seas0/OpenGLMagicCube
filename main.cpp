@@ -1,12 +1,12 @@
 /* Project Name: OpenGL Magic Cube
 *  Author: Seas0 (Liu Sichen)
 *  Create Date: 2020/11/15
-*  Last Modify Date: 2020/12/21
+*  Last Modify Date: 2020/12/23
 *  Comment: This Project uses the Core-profile of OpenGL above 3.3 instead of Immediate mode,
 *           So may not be able to run on some old System.
 */
 
-/* // TODO List:
+/* // DONE List:
 *  [x] Initialize a window
 *  [x] Manage buffer
 *  [x] Draw a triangle
@@ -19,7 +19,13 @@
 *  [x] Pan & Rotate whole Magic Cube
 *  [x] Rotate each section of the Magic Cube
 *  [x] Draw & Control whole Magic Cube
+*  [x] Pure color mode
 *  [x] Apply texture on the cube
+*/
+
+/* // TODO List:
+*  [.] Optimize camera
+*  [ ] Auto camera
 *  [ ] Display info text
 *  [ ] Random Shuffle
 *  [ ] Auto resume
@@ -66,6 +72,7 @@ typedef unsigned char byte;
 
 // reset window size vars & change viewport
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
@@ -80,7 +87,9 @@ void indexRedefine();
 unsigned int windowWidth = 800, windowHeight = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 1.5f));
+Camera camera(glm::vec3(1.0f, 1.0f, 1.0f),
+              glm::vec3(0.0f, 1.0f, 0.0f),
+              -135, -36);
 float lastX = windowWidth / 2.0f;
 float lastY = windowHeight / 2.0f;
 bool firstMouse = true;
@@ -89,17 +98,20 @@ bool firstMouse = true;
 float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
-// model data
+// model related data
+// ------------------
+
+// model vertex data
 const float halfSideLen = 0.1f;
 const float sideLen = halfSideLen * 2;
 const float singleCubeVertices[] = {
     //              Position                        Color          Texture
     // back face
     -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
     -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.0f,
     -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
     // front face
     -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
@@ -117,10 +129,10 @@ const float singleCubeVertices[] = {
     -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
     // right face
     halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 1.0f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
     halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 1.0f,
     halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
     // bottom face
     -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
@@ -131,11 +143,15 @@ const float singleCubeVertices[] = {
     -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
     // top face
     -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f,
-    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
     -halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
     -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f};
+
+// model matrixs
+glm::mat4 cubeModel[27];
+int cubeIndex[3][3][3] = {0};
 
 // model movement
 const float ANGULAR_SPEED = 90.0f;
@@ -183,10 +199,6 @@ const glm::vec3 cubeOriginPositions[] = {
     glm::vec3(sideLen, sideLen, sideLen),
 };
 
-// model matrixs
-glm::mat4 cubeModel[27];
-int cubeIndex[3][3][3] = {0};
-
 // status vars
 enum editSection
 {
@@ -207,9 +219,12 @@ enum rotateDirection
     CLOCK = 1,
     CONTC = -1
 } nowRotate;
+bool textureMode = true;
 
 int main()
 {
+    std::ios::sync_with_stdio(false);
+
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -226,12 +241,13 @@ int main()
     GLFWwindow *window = glfwCreateWindow(windowWidth, windowHeight, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
@@ -242,20 +258,21 @@ int main()
     // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     // build and compile shader program (texture shader & color shader)
     // ------------------------------------
     Shader textureShader("./resource/shader/vertexShader.glsl",
                          "./resource/shader/fragmentShader.glsl"),
-        colorShader("./resource/shader/vertexShader.glsl",
-                    "./resource/shader/fragmentShader.glsl");
+        colorShader("./resource/shader/vertexShaderColor.glsl",
+                    "./resource/shader/fragmentShaderColor.glsl");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -298,7 +315,7 @@ int main()
         textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
         if (!textureSource[i])
         {
-            std::cout << "Failed to load texture " << path.str() << std::endl;
+            std::cerr << "Failed to load texture " << path.str() << std::endl;
             flag = false;
         }
     }
@@ -329,8 +346,8 @@ int main()
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
                 // set texture filtering parameters
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
                 byte *tmp = (byte *)malloc(1536 * 1024 * 4);
                 memset(tmp, 0xcd, 512 * 4 * 512 * 6);
@@ -422,7 +439,7 @@ int main()
     // free source image in system memory
     for (int i = 0; i < 6; ++i)
         stbi_image_free(textureSource[i]);
-                
+
     nowEditing = NONE;
     nowRotate = STOP;
     float angle = 0;
@@ -438,7 +455,8 @@ int main()
         lastFrame = currentFrame;
 
         // TODO: Find a efficient way to calculate & display FPS
-        //std::cout << "FPS:" << 1/deltaTime << std::endl;
+        //std::cout << "FPS:" << 1 / deltaTime << std::endl;
+        //std::cout << camera.Yaw << " " << camera.Pitch << std::endl;
 
         // input
         // -----
@@ -450,15 +468,15 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // activate shader
-        textureShader.use();
-
+        Shader *nowShader = textureMode ? &textureShader : &colorShader;
+        nowShader->use();
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)windowWidth / (float)windowHeight, 0.1f, 100.0f);
-        textureShader.setMat4("projection", projection);
+        nowShader->setMat4("projection", projection);
 
         // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
-        textureShader.setMat4("view", view);
+        nowShader->setMat4("view", view);
 
         // render cubes
         glBindVertexArray(VAO);
@@ -504,20 +522,22 @@ int main()
                     glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
                     if (j + 1 == nowEditing || k + 1 == nowEditing >> 2 || i + 1 == nowEditing >> 4)
                     {
-                        textureShader.setVec3("mask", glm::vec3(-0.5f, -0.5f, 1.0f));
+                        nowShader->setVec3("mask", glm::vec3(-0.5f, -0.5f, -0.5f));
                         model = cubeModel[cubeIndex[i][j][k]];
                         if (nowRotate)
                             model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector) * cubeModel[cubeIndex[i][j][k]];
                     }
                     else
                     {
-                        textureShader.setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
+                        nowShader->setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
                         model = cubeModel[cubeIndex[i][j][k]];
                     }
 
-                    textureShader.setMat4("model", model);
+                    nowShader->setMat4("model", model);
 
                     glDrawArrays(GL_TRIANGLES, 0, 36);
+                    if (!textureMode)
+                        glDrawArrays(GL_LINE, 0, 36);
                 }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -530,6 +550,7 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteTextures(27, cubeTexture);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -537,19 +558,11 @@ int main()
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// process camera input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
     float originSpeed = camera.MovementSpeed;
-    int operateFlag = 0;
-
-    // Workflow control
-    // ----------------
-
-    // ESC for exiting program
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
 
     // Camera control
     // --------------
@@ -568,44 +581,6 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 
-    // Magic Cube Manual Rotation
-    // -------------------------------------
-
-    // Num Pad Number for section activation
-    // X-axis
-    if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS && !nowRotate)
-        nowEditing = X_LEFT_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS && !nowRotate)
-        nowEditing = X_MIDDLE_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS && !nowRotate)
-        nowEditing = X_RIGHT_SECTION;
-
-    // Y-axis
-    if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS && !nowRotate)
-        nowEditing = Y_BOTTOM_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS && !nowRotate)
-        nowEditing = Y_MIDDLE_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS && !nowRotate)
-        nowEditing = Y_TOP_SECTION;
-
-    // Z-axis
-    if (glfwGetKey(window, GLFW_KEY_KP_7) == GLFW_PRESS && !nowRotate)
-        nowEditing = Z_BACK_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS && !nowRotate)
-        nowEditing = Z_MIDDLE_SECTION;
-    if (glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS && !nowRotate)
-        nowEditing = Z_FRONT_SECTION;
-
-    // Deactivate manual editing
-    if (glfwGetKey(window, GLFW_KEY_KP_0) == GLFW_PRESS && !nowRotate)
-        nowEditing = NONE;
-
-    // Q/E for section routation way
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS && nowEditing)
-        nowRotate = CONTC;
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS && nowEditing)
-        nowRotate = CLOCK;
-
     camera.MovementSpeed = originSpeed;
 }
 
@@ -618,6 +593,60 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     glViewport(0, 0, width, height);
     windowWidth = width;
     windowHeight = height;
+}
+
+//
+// -----------
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
+{
+    // Workflow control
+    // ----------------
+
+    // ESC for exiting program
+    if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
+        glfwSetWindowShouldClose(window, true);
+
+    // T for switching between
+    if (action == GLFW_PRESS && key == GLFW_KEY_T)
+        textureMode = !textureMode;
+
+    // Magic Cube Manual Rotation
+    // -------------------------------------
+
+    // Num Pad Number for section activation
+    // X-axis
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_1 && !nowRotate)
+        nowEditing = X_LEFT_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_2 && !nowRotate)
+        nowEditing = X_MIDDLE_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_3 && !nowRotate)
+        nowEditing = X_RIGHT_SECTION;
+
+    // Y-axis
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_4 && !nowRotate)
+        nowEditing = Y_BOTTOM_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_5 && !nowRotate)
+        nowEditing = Y_MIDDLE_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_6 && !nowRotate)
+        nowEditing = Y_TOP_SECTION;
+
+    // Z-axis
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_7 && !nowRotate)
+        nowEditing = Z_BACK_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_8 && !nowRotate)
+        nowEditing = Z_MIDDLE_SECTION;
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_9 && !nowRotate)
+        nowEditing = Z_FRONT_SECTION;
+
+    // Deactivate manual editing
+    if (action == GLFW_PRESS && key == GLFW_KEY_KP_0 && !nowRotate)
+        nowEditing = NONE;
+
+    // Q/E for section routation direction
+    if (action == GLFW_PRESS && key == GLFW_KEY_LEFT_BRACKET && nowEditing)
+        nowRotate = CONTC;
+    if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT_BRACKET && nowEditing)
+        nowRotate = CLOCK;
 }
 
 // glfw: whenever the mouse moves, this callback is called

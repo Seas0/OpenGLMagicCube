@@ -19,7 +19,7 @@ uniform vec3 ambient;
 uniform vec3 mask;
 
 void main() {
-  // linearly interpolate between both textures (80% container, 20% awesomeface)
+  // apply the mask on the texture
   FragColor =
       texture(Texture, TexCoord) *
       vec4(vec3(1.0f, 1.0f, 1.0f) - mask, 1.0f);
