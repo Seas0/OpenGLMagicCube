@@ -34,16 +34,19 @@
 *  --- May be more features ?
 */
 
-// GLAD: A simple library to initialize OpenGL function
+// GLAD: A library to initialize OpenGL function
 #include <glad/glad.h>
 
-// GLFW: A simple library to manage OpenGL context
+// GLFW: A library to manage OpenGL context
 #include <GLFW/glfw3.h>
 
 // GLM:  A library for matrix calculate & etc.
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+// Freetype: A library for TureType font loading & rendering
+#include <ft2build.h>
 
 // stb_image: A simple library for texture loading
 #define STB_IMAGE_IMPLEMENTATION
@@ -689,7 +692,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (action == GLFW_PRESS && key == GLFW_KEY_KP_0 && !nowRotate)
         nowEditing = NONE;
 
-    // Q/E for section routation direction
+    // [/] for section routation direction
     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_LEFT_BRACKET && nowEditing)
         nowRotate = CONTC;
     if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_RIGHT_BRACKET && nowEditing)
