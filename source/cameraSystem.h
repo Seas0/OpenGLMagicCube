@@ -13,12 +13,15 @@ enum Camera_Movement
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    CSPIN,
+    RSPIN
 };
 
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
+const float ROW = 0.0f;
 const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
@@ -36,6 +39,7 @@ public:
     // euler Angles
     float Yaw;
     float Pitch;
+    float Row;
     // camera options
     float MovementSpeed;
     float MouseSensitivity;
@@ -44,13 +48,14 @@ public:
     // constructor with vectors
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-           float yaw = YAW, float pitch = PITCH)
+           float yaw = YAW, float pitch = PITCH, float row = ROW)
         : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
         Yaw = yaw;
         Pitch = pitch;
+        Row = row;
         updateCameraVectors();
     }
     // constructor with scalar values

@@ -83,6 +83,9 @@ void processInput(GLFWwindow *window);
 // mantain index array to loacate each single cube
 void indexRedefine();
 
+// random shuffle Magic Cube
+void randomShuffle();
+
 // resolution settings
 unsigned int windowWidth = 800, windowHeight = 600;
 
@@ -154,7 +157,7 @@ glm::mat4 cubeModel[27];
 int cubeIndex[3][3][3] = {0};
 
 // model movement
-const float ANGULAR_SPEED = 90.0f;
+float angularSpeed = 180.0f;
 
 // world space positions of our cubes
 const glm::vec3 cubeOriginPositions[] = {
@@ -219,11 +222,16 @@ enum rotateDirection
     CLOCK = 1,
     CONTC = -1
 } nowRotate;
-bool textureMode = true;
+bool textureMode = true,
+     randomMode = false,
+     captureMouse = true;
 
 int main()
 {
+    // initialize std i/o and gen random seed from system time
+    // -------------------------------------------------------
     std::ios::sync_with_stdio(false);
+    std::srand(std::time(NULL));
 
     // glfw: initialize and configure
     // ------------------------------
@@ -252,7 +260,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -458,18 +466,34 @@ int main()
         //std::cout << "FPS:" << 1 / deltaTime << std::endl;
         //std::cout << camera.Yaw << " " << camera.Pitch << std::endl;
 
-        // input
-        // -----
+        // set mouse capture mode
+        if (captureMouse)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        else
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+        // random shuffle if enter random mode
+        // -----------------------------------
+        angularSpeed = randomMode ? 360.0f : 180.0f;
+        if (!nowRotate && randomMode)
+            randomShuffle();
+
+        // camera movement input
+        // ---------------------
         processInput(window);
 
         // render pure color background
         // ----------------------------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // activate shader
+        // ---------------
         Shader *nowShader = textureMode ? &textureShader : &colorShader;
         nowShader->use();
+
+        // camera matrix passthrough
+        // -------------------------
         // pass projection matrix to shader (note that in this case it could change every frame)
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)windowWidth / (float)windowHeight, 0.1f, 100.0f);
         nowShader->setMat4("projection", projection);
@@ -478,38 +502,43 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         nowShader->setMat4("view", view);
 
-        // render cubes
-        glBindVertexArray(VAO);
+        // light info passthrough
+        // ----------------------
+        nowShader->setVec3("ambient", glm::vec3(0.6f));
 
+        // prepare rotation matrix
+        // -----------------------
         glm::vec3 rotateVector = glm::vec3(0.0f);
-        // process rotation matrix
+
+        if (!nowEditing && nowRotate)
+        {
+            std::cerr << "ERROR: Unknow what to do!!!" << std::endl;
+            std::clog << nowEditing << " " << nowRotate << std::endl;
+        }
+
         if (nowEditing && nowRotate)
         {
-            if (abs(angle += ((float)nowRotate) * (sin(glm::radians(abs(angle)) * 2.0) + 0.1) * ANGULAR_SPEED * deltaTime) > 90.0f)
+            // update angle & check if rotattion finished
+            if (abs(angle += ((float)nowRotate) * (sin(glm::radians(abs(angle)) * 2.0) + 0.1) * angularSpeed * deltaTime) > 90.0f)
             {
                 angle = 0;
+
+                // call index update
                 indexRedefine();
                 nowRotate = STOP;
             }
-            switch (nowEditing)
-            {
-            case Y_BOTTOM_SECTION:
-            case Y_MIDDLE_SECTION:
-            case Y_TOP_SECTION:
+            if (nowEditing & 3)
                 rotateVector = glm::vec3(0.0f, 1.0f, 0.0f);
-                break;
-            case Z_BACK_SECTION:
-            case Z_MIDDLE_SECTION:
-            case Z_FRONT_SECTION:
+            if (nowEditing & 12)
                 rotateVector = glm::vec3(0.0f, 0.0f, 1.0f);
-                break;
-            case X_LEFT_SECTION:
-            case X_MIDDLE_SECTION:
-            case X_RIGHT_SECTION:
+            if (nowEditing & 48)
                 rotateVector = glm::vec3(1.0f, 0.0f, 0.0f);
-                break;
-            }
         }
+
+        // render cubes
+        // ------------
+        glBindVertexArray(VAO);
+
         for (int j = 0; j < 3; ++j)
             for (int k = 0; k < 3; ++k)
                 for (int i = 0; i < 3; ++i)
@@ -595,7 +624,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     windowHeight = height;
 }
 
-//
+// glfw: whenever the key status changed, this callback is called
 // -----------
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
@@ -606,9 +635,17 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
         glfwSetWindowShouldClose(window, true);
 
-    // T for switching between
+    // T for switching between texture and pure color mode
     if (action == GLFW_PRESS && key == GLFW_KEY_T)
         textureMode = !textureMode;
+
+    // R for switching random mode
+    if (action == GLFW_PRESS && key == GLFW_KEY_R)
+        randomMode = !randomMode;
+
+    // X for toggle mouse capture
+    if (action == GLFW_PRESS && key == GLFW_KEY_X)
+        captureMouse = !captureMouse;
 
     // Magic Cube Manual Rotation
     // -------------------------------------
@@ -643,9 +680,9 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         nowEditing = NONE;
 
     // Q/E for section routation direction
-    if (action == GLFW_PRESS && key == GLFW_KEY_LEFT_BRACKET && nowEditing)
+    if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_LEFT_BRACKET && nowEditing)
         nowRotate = CONTC;
-    if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT_BRACKET && nowEditing)
+    if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key == GLFW_KEY_RIGHT_BRACKET && nowEditing)
         nowRotate = CLOCK;
 }
 
@@ -684,11 +721,8 @@ void indexRedefine()
 
     // Brute-force, not elegant
     // TODO: use matrix tras & mirr to rotate 90 degree
-    switch (nowEditing)
+    if (nowEditing & 3)
     {
-    case Y_BOTTOM_SECTION:
-    case Y_MIDDLE_SECTION:
-    case Y_TOP_SECTION:
         editingStage = (nowEditing & 3) - 1;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
@@ -718,10 +752,9 @@ void indexRedefine()
             cubeIndex[2][editingStage][1] = originLayIndex[1][0];
             cubeIndex[2][editingStage][2] = originLayIndex[2][0];
         }
-        break;
-    case Z_BACK_SECTION:
-    case Z_MIDDLE_SECTION:
-    case Z_FRONT_SECTION:
+    }
+    if (nowEditing & 12)
+    {
         editingStage = ((nowEditing >> 2) & 3) - 1;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
@@ -751,10 +784,9 @@ void indexRedefine()
             cubeIndex[2][1][editingStage] = originLayIndex[1][2];
             cubeIndex[2][2][editingStage] = originLayIndex[0][2];
         }
-        break;
-    case X_LEFT_SECTION:
-    case X_MIDDLE_SECTION:
-    case X_RIGHT_SECTION:
+    }
+    if (nowEditing & 48)
+    {
         editingStage = ((nowEditing >> 4) & 3) - 1;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
@@ -784,8 +816,14 @@ void indexRedefine()
             cubeIndex[editingStage][2][1] = originLayIndex[1][2];
             cubeIndex[editingStage][2][2] = originLayIndex[0][2];
         }
-        break;
-    default:
-        break;
     }
+}
+
+// random shuffle the magic cube when not rotating
+// -----------------------------------------------
+void randomShuffle()
+{
+    // use bit calculate to gen random nowEditing & nowRotate
+    nowEditing = (editSection)(((rand() % 3) + 1) << (2 * (rand() % 3)));
+    nowRotate = (std::rand() & 1) ? CONTC : CLOCK;
 }
