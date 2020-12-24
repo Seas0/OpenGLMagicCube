@@ -24,3 +24,6 @@ configure_file(resource/texture/Top.1536x1536.png resource/texture/cube05.png CO
 include_directories(include/common)
 add_executable(cube main.cpp source/glad.c)
 target_link_libraries(cube glfw GL m Xrandr Xi X11 Xxf86vm pthread dl Xinerama Xcursor freetype)
+configure_file(resource/shader/fragmentShaderColor.glsl resource/shader/fragmentShaderText.glsl COPYONLY)
+configure_file(resource/shader/vertexShaderColor.glsl resource/shader/vertexShaderText.glsl COPYONLY)
+configure_file(resource/font/simhei.ttf resource/font/simhei.ttf COPYONLY)

@@ -47,6 +47,7 @@
 
 // Freetype: A library for TureType font loading & rendering
 #include <ft2build.h>
+#include FT_FREETYPE_H
 
 // stb_image: A simple library for texture loading
 #define STB_IMAGE_IMPLEMENTATION
@@ -55,13 +56,14 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb/stb_image_resize.h>
 
-// some standard headers for basic I/O
+// some standard headers for basic I/O & basic data structure
 #include <iostream>
 #include <fstream>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <ctime>
+#include <map>
 
 // custom headers
 // --------------
@@ -71,7 +73,34 @@
 // generate view & projection matrix to implement camera control
 #include "source/cameraSystem.h"
 
+// type defines
+// ------------
+
+// use byte instead of char to avoid confusion while storing raw data
 typedef unsigned char byte;
+
+// editing section status for a 3x3 Magic Cube
+enum editSection
+{
+    NONE = 0,
+    Y_BOTTOM_SECTION = 1,
+    Y_MIDDLE_SECTION = 2,
+    Y_TOP_SECTION = 3,
+    Z_BACK_SECTION = 4,
+    Z_MIDDLE_SECTION = 8,
+    Z_FRONT_SECTION = 12,
+    X_LEFT_SECTION = 16,
+    X_MIDDLE_SECTION = 32,
+    X_RIGHT_SECTION = 48
+};
+
+// rotate direction of editing
+enum rotateDirection
+{
+    STOP = 0,
+    CLOCK = 1,
+    CONTC = -1
+};
 
 // call back functions that handle event
 // -------------------------------------
@@ -209,28 +238,12 @@ const glm::vec3 cubeOriginPositions[] = {
 };
 
 // status vars
-enum editSection
-{
-    NONE = 0,
-    Y_BOTTOM_SECTION = 1,
-    Y_MIDDLE_SECTION = 2,
-    Y_TOP_SECTION = 3,
-    Z_BACK_SECTION = 4,
-    Z_MIDDLE_SECTION = 8,
-    Z_FRONT_SECTION = 12,
-    X_LEFT_SECTION = 16,
-    X_MIDDLE_SECTION = 32,
-    X_RIGHT_SECTION = 48
-} nowEditing;
-enum rotateDirection
-{
-    STOP = 0,
-    CLOCK = 1,
-    CONTC = -1
-} nowRotate;
+// ----------- 
+editSection nowEditing;
+rotateDirection nowRotate;
 bool textureMode = true,
      randomMode = false,
-     captureMouse = true;
+     captureMouse = false;
 
 int main()
 {
@@ -266,7 +279,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // tell GLFW to capture our mouse
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -286,7 +299,10 @@ int main()
     Shader textureShader("./resource/shader/vertexShader.glsl",
                          "./resource/shader/fragmentShader.glsl"),
         colorShader("./resource/shader/vertexShaderColor.glsl",
-                    "./resource/shader/fragmentShaderColor.glsl");
+                    "./resource/shader/fragmentShaderColor.glsl"),
+                    textShader("./resource/shader/vertexShaderText.glsl",
+                   "./resource/shader/fragmentShaderText.glsl");
+
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -341,7 +357,7 @@ int main()
         }
     }
 
-    // gen texture for each cube
+    // gen texture buffer for each cube
     GLuint cubeTexture[27];
     glGenTextures(27, cubeTexture);
 
