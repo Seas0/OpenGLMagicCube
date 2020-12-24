@@ -102,13 +102,13 @@ enum rotateDirection
     CONTC = -1
 };
 
-// character info
+// character texture info
 struct Character
 {
-    GLuint TextureID;   // 字形纹理的ID
-    glm::ivec2 Size;    // 字形大小
-    glm::ivec2 Bearing; // 从基准线到字形左部/顶部的偏移值
-    GLuint Advance;     // 原点距下一个字形原点的距离
+    GLuint TextureID;   // ID handle of the glyph texture
+    glm::ivec2 Size;    // Size of glyph
+    glm::ivec2 Bearing; // Offset from baseline to left/top of glyph
+    GLuint Advance;     // Horizontal offset to advance to next glyph
 };
 
 // call back functions that handle event
@@ -249,6 +249,7 @@ const glm::vec3 cubeOriginPositions[] = {
     glm::vec3(sideLen, sideLen, sideLen),
 };
 
+// character texture cache
 std::map<wchar_t, Character> Characters;
 
 // status vars
@@ -257,7 +258,7 @@ editSection nowEditing;
 rotateDirection nowRotate;
 bool textureMode = true,
      randomMode = false,
-     captureMouse = false;
+     captureMouse = true;
 
 int main()
 {
@@ -549,6 +550,8 @@ int main()
         // TODO: Find a efficient way to calculate & display FPS
         //std::cout << "FPS:" << 1 / deltaTime << std::endl;
         //std::cout << camera.Yaw << " " << camera.Pitch << std::endl;
+        std::wstringstream fpsString;
+        fpsString << L"FPS: " << 1 / deltaTime;
 
         // set mouse capture mode
         if (captureMouse)
@@ -619,7 +622,6 @@ int main()
                 rotateVector = glm::vec3(1.0f, 0.0f, 0.0f);
         }
 
-        
         // render cubes
         // ------------
         glBindVertexArray(VAO);
@@ -653,10 +655,10 @@ int main()
                     if (!textureMode)
                         glDrawArrays(GL_LINE, 0, 36);
                 }
-        
 
         // text rendering
-        renderText(textShader, L"为了胜利！", face, charVBO, charVAO, 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
+        renderText(textShader, L"为了胜利！", face, charVBO, charVAO, 25.0f, 25.0f, 0.5f, glm::vec3(0.8, 0.1f, 0.1f));
+        renderText(textShader, fpsString.str(), face, charVBO, charVAO, 25.0f, windowHeight - 25.0f, 0.5f, glm::vec3(0.1, 0.7f, 0.5f));
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -668,8 +670,16 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &charVAO);
+    glDeleteBuffers(1, &charVBO);
     glDeleteTextures(27, cubeTexture);
-
+    // destroy Freetype
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
+    for (auto c = Characters.begin(); c != Characters.end(); c++)
+    {
+        glDeleteTextures(1, &(c->second.TextureID));
+    }
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
@@ -917,17 +927,21 @@ void randomShuffle()
     nowRotate = (std::rand() & 1) ? CONTC : CLOCK;
 }
 
+// render CJK text (using wchar_t)
+// TODO: try char32_t
+// -------------------------------
 void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
 {
-    // 激活对应的渲染状态
+    // active & set textShader
     textShader.use();
     textShader.setVec3("textColor", color);
     glm::mat4 projection = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight);
     textShader.setMat4("projection", projection);
 
-    // 遍历文本中所有的字符
+    // iterate through all characters
     for (auto c = text.begin(); c != text.end(); c++)
     {
+        // if this character isn't in cache
         if (Characters.find(*c) == Characters.end())
         {
             if (FT_Load_Char(face, *c, FT_LOAD_RENDER))
@@ -935,7 +949,7 @@ void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO
                 std::cerr << "ERROR::FREETYTPE: Failed to load Glyph: " << *c << std::endl;
                 continue;
             }
-            // 生成纹理
+            // gen texture
             GLuint charTexture;
             glGenTextures(1, &charTexture);
             glBindTexture(GL_TEXTURE_2D, charTexture);
@@ -949,12 +963,12 @@ void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO
                 GL_RED,
                 GL_UNSIGNED_BYTE,
                 face->glyph->bitmap.buffer);
-            // 设置纹理选项
+            // set texture options
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            // 储存字符供之后使用
+            // store character texture in cache for later use
             Character character = {
                 charTexture,
                 glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
@@ -970,7 +984,7 @@ void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO
 
         GLfloat w = ch.Size.x * scale;
         GLfloat h = ch.Size.y * scale;
-        // 对每个字符更新VBO
+        // update VBO for this character
         GLfloat charVertices[6][4] = {
             {xpos, ypos + h, 0.0, 0.0},
             {xpos, ypos, 0.0, 1.0},
@@ -979,17 +993,18 @@ void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO
             {xpos, ypos + h, 0.0, 0.0},
             {xpos + w, ypos, 1.0, 1.0},
             {xpos + w, ypos + h, 1.0, 0.0}};
-        // 在四边形上绘制字形纹理
+        // set glyph texture over quad
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-        // 更新VBO内存的内容
+        // update content of VBO memory
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(charVertices), charVertices);
-        // 绘制四边形
+        // render quad
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // 更新位置到下一个字形的原点，注意单位是1/64像素
-        x += (ch.Advance >> 6) * scale; // 位偏移6个单位来获取单位为像素的值 (2^6 = 64)
+        // advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+        x += (ch.Advance >> 6) * scale;
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
