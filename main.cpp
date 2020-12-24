@@ -102,6 +102,15 @@ enum rotateDirection
     CONTC = -1
 };
 
+// character info
+struct Character
+{
+    GLuint TextureID;   // 字形纹理的ID
+    glm::ivec2 Size;    // 字形大小
+    glm::ivec2 Bearing; // 从基准线到字形左部/顶部的偏移值
+    GLuint Advance;     // 原点距下一个字形原点的距离
+};
+
 // call back functions that handle event
 // -------------------------------------
 
@@ -120,6 +129,9 @@ void indexRedefine();
 
 // random shuffle Magic Cube
 void randomShuffle();
+
+// text rendering
+void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
 
 // resolution settings
 unsigned int windowWidth = 800, windowHeight = 600;
@@ -237,8 +249,10 @@ const glm::vec3 cubeOriginPositions[] = {
     glm::vec3(sideLen, sideLen, sideLen),
 };
 
+std::map<wchar_t, Character> Characters;
+
 // status vars
-// ----------- 
+// -----------
 editSection nowEditing;
 rotateDirection nowRotate;
 bool textureMode = true,
@@ -262,6 +276,12 @@ int main()
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+
+    // freetype: initialize and load font file
+    // ---------------------------------------
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft))
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
 
     // glfw window creation
     // --------------------
@@ -293,22 +313,40 @@ int main()
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    // build and compile shader program (texture shader & color shader)
-    // ------------------------------------
+    // build and compile shader program (texture shader & color shader & text shader)
+    // ------------------------------------------------------------------------------
     Shader textureShader("./resource/shader/vertexShader.glsl",
                          "./resource/shader/fragmentShader.glsl"),
         colorShader("./resource/shader/vertexShaderColor.glsl",
                     "./resource/shader/fragmentShaderColor.glsl"),
-                    textShader("./resource/shader/vertexShaderText.glsl",
+        textShader("./resource/shader/vertexShaderText.glsl",
                    "./resource/shader/fragmentShaderText.glsl");
 
+    // shader initialize
+    // -----------------
+
+    // set cube sampler belongs to texture unit 0 ( GL_TEXTURE0 )
+    textureShader.use();
+    textureShader.setInt("Texture", 0);
+
+    // set text sampler belongs to texture unit 1 ( GL_TEXTURE1 )
+    textShader.use();
+    textShader.setInt("text", 1);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    GLuint VBO, VAO;
+    GLuint VBO, VAO, charVBO, charVAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &charVAO);
+    glGenBuffers(1, &charVBO);
+
+    // for single cube
+    // ---------------
 
     // bind vertex array obj to store ptr to vbo and attribs of vbo in graphic memory
     glBindVertexArray(VAO);
@@ -317,17 +355,37 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(singleCubeVertices), singleCubeVertices, GL_STATIC_DRAW);
 
-    // position attribute
+    // vertex attributes
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-
-    // color attribute
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-
-    // texture coord attribute
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    // for text render
+    // ---------------
+
+    // bind vertex array obj to store ptr to vbo and attribs of vbo in graphic memory
+    glBindVertexArray(charVAO);
+
+    // bind vertex buffer obj to store vertex data in graphic memory
+    glBindBuffer(GL_ARRAY_BUFFER, charVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+    glEnableVertexAttribArray(0);
+
+    // font loading & setting
+
+    FT_Face face;
+    if (FT_New_Face(ft, "./resource/font/NotoSansCJK-Regular.ttc", 7, &face))
+        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+
+    // set freetypr to use unicode characters (to support CJK)
+    FT_Select_Charmap(face, ft_encoding_unicode);
+
+    // set size to load glyphs as
+    FT_Set_Pixel_Sizes(face, 0, 48);
 
     // texture loading & proccessing
     // -----------------------------
@@ -360,10 +418,6 @@ int main()
     // gen texture buffer for each cube
     GLuint cubeTexture[27];
     glGenTextures(27, cubeTexture);
-
-    // tell opengl for each sampler to which texture unit it belongs to
-    textureShader.use();
-    textureShader.setInt("Texture", 0);
 
     // gen origin index &
     // gen origin model matrix &
@@ -477,6 +531,7 @@ int main()
     for (int i = 0; i < 6; ++i)
         stbi_image_free(textureSource[i]);
 
+    // initialize status vars
     nowEditing = NONE;
     nowRotate = STOP;
     float angle = 0;
@@ -564,6 +619,7 @@ int main()
                 rotateVector = glm::vec3(1.0f, 0.0f, 0.0f);
         }
 
+        
         // render cubes
         // ------------
         glBindVertexArray(VAO);
@@ -597,6 +653,10 @@ int main()
                     if (!textureMode)
                         glDrawArrays(GL_LINE, 0, 36);
                 }
+        
+
+        // text rendering
+        renderText(textShader, L"为了胜利！", face, charVBO, charVAO, 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -855,4 +915,82 @@ void randomShuffle()
     // use bit calculate to gen random nowEditing & nowRotate
     nowEditing = (editSection)(((rand() % 3) + 1) << (2 * (rand() % 3)));
     nowRotate = (std::rand() & 1) ? CONTC : CLOCK;
+}
+
+void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
+{
+    // 激活对应的渲染状态
+    textShader.use();
+    textShader.setVec3("textColor", color);
+    glm::mat4 projection = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight);
+    textShader.setMat4("projection", projection);
+
+    // 遍历文本中所有的字符
+    for (auto c = text.begin(); c != text.end(); c++)
+    {
+        if (Characters.find(*c) == Characters.end())
+        {
+            if (FT_Load_Char(face, *c, FT_LOAD_RENDER))
+            {
+                std::cerr << "ERROR::FREETYTPE: Failed to load Glyph: " << *c << std::endl;
+                continue;
+            }
+            // 生成纹理
+            GLuint charTexture;
+            glGenTextures(1, &charTexture);
+            glBindTexture(GL_TEXTURE_2D, charTexture);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                face->glyph->bitmap.width,
+                face->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                face->glyph->bitmap.buffer);
+            // 设置纹理选项
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            // 储存字符供之后使用
+            Character character = {
+                charTexture,
+                glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                face->glyph->advance.x};
+            Characters.insert(std::pair<wchar_t, Character>(*c, character));
+        }
+
+        Character ch = Characters[*c];
+
+        GLfloat xpos = x + ch.Bearing.x * scale;
+        GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+
+        GLfloat w = ch.Size.x * scale;
+        GLfloat h = ch.Size.y * scale;
+        // 对每个字符更新VBO
+        GLfloat charVertices[6][4] = {
+            {xpos, ypos + h, 0.0, 0.0},
+            {xpos, ypos, 0.0, 1.0},
+            {xpos + w, ypos, 1.0, 1.0},
+
+            {xpos, ypos + h, 0.0, 0.0},
+            {xpos + w, ypos, 1.0, 1.0},
+            {xpos + w, ypos + h, 1.0, 0.0}};
+        // 在四边形上绘制字形纹理
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // 更新VBO内存的内容
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(charVertices), charVertices);
+        // 绘制四边形
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // 更新位置到下一个字形的原点，注意单位是1/64像素
+        x += (ch.Advance >> 6) * scale; // 位偏移6个单位来获取单位为像素的值 (2^6 = 64)
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }

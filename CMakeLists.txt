@@ -23,8 +23,8 @@ configure_file(resource/shader/fragmentShader.glsl resource/shader/fragmentShade
 configure_file(resource/shader/vertexShader.glsl resource/shader/vertexShader.glsl COPYONLY)
 configure_file(resource/shader/fragmentShaderColor.glsl resource/shader/fragmentShaderColor.glsl COPYONLY)
 configure_file(resource/shader/vertexShaderColor.glsl resource/shader/vertexShaderColor.glsl COPYONLY)
-configure_file(resource/shader/fragmentShaderColor.glsl resource/shader/fragmentShaderText.glsl COPYONLY)
-configure_file(resource/shader/vertexShaderColor.glsl resource/shader/vertexShaderText.glsl COPYONLY)
+configure_file(resource/shader/fragmentShaderText.glsl resource/shader/fragmentShaderText.glsl COPYONLY)
+configure_file(resource/shader/vertexShaderText.glsl resource/shader/vertexShaderText.glsl COPYONLY)
 
 # texture
 configure_file(resource/texture/Back.1536x1536.png resource/texture/cube00.png COPYONLY)
@@ -37,6 +37,7 @@ configure_file(resource/texture/Top.1536x1536.png resource/texture/cube05.png CO
 # configure_file(resource/texture/wall.jpg resource/texture/wall.jpg COPYONLY)
 
 # font
+configure_file(resource/font/NotoSansCJK-Regular.ttc resource/font/NotoSansCJK-Regular.ttc COPYONLY)
 configure_file(resource/font/simhei.ttf resource/font/simhei.ttf COPYONLY)
 
 # include dir & source file & library
