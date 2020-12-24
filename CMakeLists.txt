@@ -27,3 +27,6 @@ target_link_libraries(cube glfw GL m Xrandr Xi X11 Xxf86vm pthread dl Xinerama X
 configure_file(resource/shader/fragmentShaderColor.glsl resource/shader/fragmentShaderText.glsl COPYONLY)
 configure_file(resource/shader/vertexShaderColor.glsl resource/shader/vertexShaderText.glsl COPYONLY)
 configure_file(resource/font/simhei.ttf resource/font/simhei.ttf COPYONLY)
+configure_file(resource/shader/fragmentShaderColor.glsl resource/shader/fragmentShaderText.glsl COPYONLY)
+configure_file(resource/shader/vertexShaderColor.glsl resource/shader/vertexShaderText.glsl COPYONLY)
+configure_file(resource/font/simhei.ttf resource/font/simhei.ttf COPYONLY)
