@@ -38,7 +38,6 @@ configure_file(resource/texture/Top.1536x1536.png resource/texture/cube05.png CO
 
 # font
 configure_file(resource/font/NotoSansCJK-Regular.ttc resource/font/NotoSansCJK-Regular.ttc COPYONLY)
-configure_file(resource/font/simhei.ttf resource/font/simhei.ttf COPYONLY)
 
 # include dir & source file & library
 include_directories(include/common)
