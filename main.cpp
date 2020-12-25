@@ -417,15 +417,20 @@ int main()
 
     // bind vertex buffer obj to store vertex data in graphic memory
     glBindBuffer(GL_ARRAY_BUFFER, charVBO);
+
+    // initialize vertex buffer with empty data
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    
+    // vertex attributes
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
     glEnableVertexAttribArray(0);
 
     // font loading & setting
+    // ----------------------
 
     FT_Face face;
     if (FT_New_Face(ft, "./resource/font/NotoSansCJK-Regular.ttc", 7, &face))
-        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+        std::cerr << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
     // set freetypr to use unicode characters (to support CJK)
     FT_Select_Charmap(face, ft_encoding_unicode);
