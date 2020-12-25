@@ -133,6 +133,39 @@ void randomShuffle();
 // text rendering
 void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
 
+// DEBUG function
+#ifdef _DEBUG
+GLenum glCheckError_(const char *file, int line)
+{
+    GLenum errorCode;
+    while ((errorCode = glGetError()) != GL_NO_ERROR)
+    {
+        std::string error;
+        switch (errorCode)
+        {
+        case GL_INVALID_ENUM:
+            error = "INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            error = "INVALID_VALUE";
+            break;
+        case GL_INVALID_OPERATION:
+            error = "INVALID_OPERATION";
+            break;
+        case GL_OUT_OF_MEMORY:
+            error = "OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            error = "INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        }
+        std::cout << error << " | " << file << " (" << line << ")" << std::endl;
+    }
+    return errorCode;
+}
+#define glCheckError() glCheckError_(__FILE__, __LINE__)
+#endif
+
 // resolution settings
 unsigned int windowWidth = 800, windowHeight = 600;
 
@@ -270,9 +303,19 @@ int main()
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef _DEBUG
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    GLint flags;
+    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    {
+        // 初始化调试输出
+    }
+#endif
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
