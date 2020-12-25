@@ -704,8 +704,10 @@ int main()
                 }
 
         // text rendering
+        glDisable(GL_DEPTH_TEST);
         renderText(textShader, L"为了胜利！", face, charVBO, charVAO, 25.0f, 25.0f, 0.5f, glm::vec3(0.8, 0.1f, 0.1f));
         renderText(textShader, fpsString.str(), face, charVBO, charVAO, 25.0f, windowHeight - 25.0f, 0.5f, glm::vec3(0.1, 0.7f, 0.5f));
+        glEnable(GL_DEPTH_TEST);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
