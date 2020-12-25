@@ -155,49 +155,49 @@ float lastFrame = 0.0f;
 const float halfSideLen = 0.1f;
 const float sideLen = halfSideLen * 2;
 const float singleCubeVertices[] = {
-    //              Position                        Color          Texture
+    //              Position                        Normal              Color          Texture
     // back face
-    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
-    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.5f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
-    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
-    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.0, 0.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.333333f, 0.0f,
     // front face
-    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.0f,
-    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
-    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
-    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.5f,
-    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.666667f, 0.0f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.666667f, 0.5f,
+    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.333333f, 0.5f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.333333f, 0.0f,
     // left face
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.5f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
-    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
+    -halfSideLen, halfSideLen, halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
+    -halfSideLen, halfSideLen, -halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.666667f, 0.5f,
+    -halfSideLen, -halfSideLen, -halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 0.666667f, 0.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f,
+    -halfSideLen, halfSideLen, halfSideLen, -1.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.5f,
     // right face
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
-    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 0.333333f, 1.0f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.333333f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.333333f, 1.0f,
+    halfSideLen, halfSideLen, halfSideLen, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
     // bottom face
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
-    halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 0.5f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
-    halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
-    -halfSideLen, -halfSideLen, halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 1.0f,
-    -halfSideLen, -halfSideLen, -halfSideLen, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
+    halfSideLen, -halfSideLen, -halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.666667f, 0.5f,
+    halfSideLen, -halfSideLen, halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
+    halfSideLen, -halfSideLen, halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.666667f, 1.0f,
+    -halfSideLen, -halfSideLen, halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.333333f, 1.0f,
+    -halfSideLen, -halfSideLen, -halfSideLen, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.333333f, 0.5f,
     // top face
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f,
-    -halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 0.5f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
-    halfSideLen, halfSideLen, halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
-    halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-    -halfSideLen, halfSideLen, -halfSideLen, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f};
+    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f,
+    -halfSideLen, halfSideLen, halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.666667f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    halfSideLen, halfSideLen, halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.5f,
+    halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+    -halfSideLen, halfSideLen, -halfSideLen, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.666667f, 1.0f};
 
 // model matrixs
 glm::mat4 cubeModel[27];
@@ -357,12 +357,14 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(singleCubeVertices), singleCubeVertices, GL_STATIC_DRAW);
 
     // vertex attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void *)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_TRUE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void *)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_TRUE, 11 * sizeof(float), (void *)(9 * sizeof(float)));
+    glEnableVertexAttribArray(3);
 
     // for text render
     // ---------------
@@ -591,7 +593,9 @@ int main()
 
         // light info passthrough
         // ----------------------
-        nowShader->setVec3("ambient", glm::vec3(0.6f));
+        nowShader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        nowShader->setVec3("lightPos", camera.Position);
+        nowShader->setVec3("viewPos", camera.Position);
 
         // prepare rotation matrix
         // -----------------------
@@ -676,10 +680,12 @@ int main()
     // destroy Freetype
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
+    // empty character cache
     for (auto c = Characters.begin(); c != Characters.end(); c++)
     {
         glDeleteTextures(1, &(c->second.TextureID));
     }
+    Characters.clear();
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
