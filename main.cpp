@@ -363,12 +363,12 @@ int main()
 
     // build and compile shader program (texture shader & color shader & text shader)
     // ------------------------------------------------------------------------------
-    Shader textureShader("./resource/shader/vertexShader.glsl",
-                         "./resource/shader/fragmentShader.glsl"),
-        colorShader("./resource/shader/vertexShaderColor.glsl",
-                    "./resource/shader/fragmentShaderColor.glsl"),
-        textShader("./resource/shader/vertexShaderText.glsl",
-                   "./resource/shader/fragmentShaderText.glsl");
+    Shader textureShader(".\\resource\\shader\\vertexShader.glsl",
+                         ".\\resource\\shader\\fragmentShader.glsl"),
+        colorShader(".\\resource\\shader\\vertexShaderColor.glsl",
+                    ".\\resource\\shader\\fragmentShaderColor.glsl"),
+        textShader(".\\resource\\shader\\vertexShaderText.glsl",
+                   ".\\resource\\shader\\fragmentShaderText.glsl");
 
     // shader initialize
     // -----------------
@@ -429,7 +429,7 @@ int main()
     // ----------------------
 
     FT_Face face;
-    if (FT_New_Face(ft, "./resource/font/NotoSansCJK-Regular.ttc", 7, &face))
+    if (FT_New_Face(ft, ".\\resource\\font\\NotoSansCJK-Regular.ttc", 7, &face))
         std::cerr << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
     // set freetypr to use unicode characters (to support CJK)
@@ -449,7 +449,7 @@ int main()
         std::stringstream path;
         int width, height, nrChannels;
         stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-        path << "./resource/texture/"
+        path << ".\\resource\\texture\\"
              << "cube" << ((i < 10) ? "0" : "") << i << ".png";
         textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
         if (width != 1536 || height != 1536 || nrChannels != 4)
