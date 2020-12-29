@@ -24,13 +24,13 @@
 */
 
 /* // TODO List:
-*  [.] Optimize camera
-*  [ ] Auto camera
-*  [ ] Display info text
+*  [D] Optimize camera
+*  [x] Auto camera
+*  [x] Display info text
 *  [x] Random Shuffle
-*  [ ] Lighting system
-*  [ ] Auto resume
-*  [ ] <W> Compile as Windows (TM) Screen Saver Program
+*  [x] Lighting system
+*  [D] Auto resume
+*  [F] <W> Compile as Windows (TM) Screen Saver Program
 *  --- May be more features ?
 */
 
@@ -48,6 +48,9 @@
 // Freetype: A library for TureType font loading & rendering
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+// FastNoise: A library for noise generate
+#include <FastNoise/FastNoiseLite.h>
 
 // stb_image: A simple library for texture loading
 #define STB_IMAGE_IMPLEMENTATION
@@ -131,7 +134,7 @@ void indexRedefine();
 void randomShuffle();
 
 // text rendering
-void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
+void renderText(Shader& textShader, std::wstring text, FT_Face& face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
 
 // DEBUG function
 #ifdef _DEBUG
@@ -238,6 +241,7 @@ int cubeIndex[3][3][3] = {0};
 
 // model movement
 float angularSpeedCoefficient = 180.0f;
+float globalAngularSpeedCoefficient = 90.0f;
 
 // world space positions of our cubes
 const glm::vec3 cubeOriginPositions[] = {
@@ -290,7 +294,7 @@ std::map<wchar_t, Character> Characters;
 editSection nowEditing;
 rotateDirection nowRotate;
 bool textureMode = true,
-     randomMode = false,
+     randomMode = true,
      captureMouse = true;
 
 int main()
@@ -300,6 +304,12 @@ int main()
     std::ios::sync_with_stdio(false);
     std::srand(std::time(NULL));
 
+    // freetype: initialize and load font file
+    // ---------------------------------------
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft))
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -308,10 +318,10 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef _DEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    GLint flags;
-    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    //glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    //GLint flags;
+    //glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    //if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
     {
         // 初始化调试输出
     }
@@ -321,11 +331,6 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // freetype: initialize and load font file
-    // ---------------------------------------
-    FT_Library ft;
-    if (FT_Init_FreeType(&ft))
-        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
 
     // glfw window creation
     // --------------------
@@ -363,12 +368,12 @@ int main()
 
     // build and compile shader program (texture shader & color shader & text shader)
     // ------------------------------------------------------------------------------
-    Shader textureShader(".\\resource\\shader\\vertexShader.glsl",
-                         ".\\resource\\shader\\fragmentShader.glsl"),
-        colorShader(".\\resource\\shader\\vertexShaderColor.glsl",
-                    ".\\resource\\shader\\fragmentShaderColor.glsl"),
-        textShader(".\\resource\\shader\\vertexShaderText.glsl",
-                   ".\\resource\\shader\\fragmentShaderText.glsl");
+    Shader textureShader("./resource/shader/vertexShader.glsl",
+                         "./resource/shader/fragmentShader.glsl"),
+        colorShader("./resource/shader/vertexShaderColor.glsl",
+                    "./resource/shader/fragmentShaderColor.glsl"),
+        textShader("./resource/shader/vertexShaderText.glsl",
+                   "./resource/shader/fragmentShaderText.glsl");
 
     // shader initialize
     // -----------------
@@ -429,7 +434,7 @@ int main()
     // ----------------------
 
     FT_Face face;
-    if (FT_New_Face(ft, ".\\resource\\font\\NotoSansCJK-Regular.ttc", 7, &face))
+    if (FT_New_Face(ft, "./resource/font/NotoSansCJK-Regular.ttc", 7, &face))
         std::cerr << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
     // set freetypr to use unicode characters (to support CJK)
@@ -449,7 +454,7 @@ int main()
         std::stringstream path;
         int width, height, nrChannels;
         stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-        path << ".\\resource\\texture\\"
+        path << "./resource/texture/"
              << "cube" << ((i < 10) ? "0" : "") << i << ".png";
         textureSource[i] = stbi_load(path.str().c_str(), &width, &height, &nrChannels, 0);
         if (width != 1536 || height != 1536 || nrChannels != 4)
@@ -585,7 +590,8 @@ int main()
     // initialize status vars
     nowEditing = NONE;
     nowRotate = STOP;
-    float angle = 0;
+    float angle = 0, globalAngle = 0;
+    glm::vec3 globalRotateVector(1.0f, 0.0f, 0.0f);
 
     // render loop
     // -----------
@@ -674,6 +680,11 @@ int main()
                 rotateVector = glm::vec3(1.0f, 0.0f, 0.0f);
         }
 
+        // global rotate angle & vector & camera fov for whole Magic Cube random rotation
+        globalAngle += randomMode * deltaTime * globalAngularSpeedCoefficient;
+        globalRotateVector = randomMode ? glm::vec3(glm::sin(currentFrame), glm::sin(currentFrame + 1.57f), glm::sin(currentFrame - 0.78f)) : globalRotateVector;
+        camera.Zoom = randomMode ? 40.0f * glm::sin(currentFrame) + 60.0f : camera.Zoom;
+
         // render cubes
         // ------------
         glBindVertexArray(VAO);
@@ -691,14 +702,18 @@ int main()
                     if (j + 1 == nowEditing || k + 1 == nowEditing >> 2 || i + 1 == nowEditing >> 4)
                     {
                         nowShader->setVec3("mask", glm::vec3(-0.5f, -0.5f, -0.5f));
-                        model = cubeModel[cubeIndex[i][j][k]];
+                        model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(globalAngle), globalRotateVector)
+                            * cubeModel[cubeIndex[i][j][k]];
                         if (nowRotate)
-                            model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector) * cubeModel[cubeIndex[i][j][k]];
+                            model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(globalAngle), globalRotateVector)
+                            * glm::rotate(glm::mat4(1.0f), (float)glm::radians(angle), rotateVector)
+                            * cubeModel[cubeIndex[i][j][k]];
                     }
                     else
                     {
                         nowShader->setVec3("mask", glm::vec3(0.0f, 0.0f, 0.0f));
-                        model = cubeModel[cubeIndex[i][j][k]];
+                        model = glm::rotate(glm::mat4(1.0f), (float)glm::radians(globalAngle), globalRotateVector)
+                            * cubeModel[cubeIndex[i][j][k]];
                     }
 
                     nowShader->setMat4("model", model);
@@ -710,14 +725,18 @@ int main()
 
         // text rendering
         glDisable(GL_DEPTH_TEST);
-        renderText(textShader, L"为了胜利！", face, charVBO, charVAO, 25.0f, 25.0f, 0.5f, glm::vec3(0.8, 0.1f, 0.1f));
-        renderText(textShader, fpsString.str(), face, charVBO, charVAO, 25.0f, windowHeight - 25.0f, 0.5f, glm::vec3(0.1, 0.7f, 0.5f));
+        renderText(textShader, L"WASD移动摄像机 小数字键盘选择层 []旋转", face, charVBO, charVAO, 25.0f, 25.0f, 0.5f, glm::vec3(0.6f, 0.6f, 0.2f));
+        renderText(textShader, L"T切换纹理 X切换鼠标 R切换随机旋转 ESC退出", face, charVBO, charVAO, windowWidth - 500.0f, windowHeight - 25.0f - 12.0f, 0.5f, glm::vec3(0.6f, 0.6f, 0.2f));
+        renderText(textShader, L"By: Seas0", face, charVBO, charVAO, windowWidth - 175.0f, 12.0f, 0.25f, glm::vec3(0.4f, 0.4f, 0.7f));
+        renderText(textShader, fpsString.str(), face, charVBO, charVAO, 25.0f, windowHeight - 25.0f - 12.0f, 0.5f, glm::vec3(0.1f, 0.7f, 0.5f));
         glEnable(GL_DEPTH_TEST);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        while (glfwGetTime() - lastFrame < 1.0f / 144.0f);
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
@@ -865,7 +884,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    camera.ProcessMouseScroll(yoffset);
+    if(!randomMode)
+        camera.ProcessMouseScroll(yoffset);
 }
 
 // update index by 90 degree rotation
@@ -986,7 +1006,7 @@ void randomShuffle()
 // render CJK text (using wchar_t)
 // TODO: try char32_t
 // -------------------------------
-void renderText(Shader &textShader, std::wstring text, FT_Face &face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
+void renderText(Shader& textShader, std::wstring text, FT_Face& face, GLuint VBO, GLuint VAO, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color)
 {
     // active & set textShader
     textShader.use();

@@ -19,6 +19,9 @@
     <Filter Include="资源文件\Texture">
       <UniqueIdentifier>{01a7f8fe-bcd0-485e-89e5-181c0b857820}</UniqueIdentifier>
     </Filter>
+    <Filter Include="资源文件\Font">
+      <UniqueIdentifier>{1e31d4c4-096a-4f69-86b1-1c7af1e8bebe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\glad.c">
@@ -37,17 +40,72 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="resource\shader\fragmentShader.glsl">
-      <Filter>资源文件\Shader</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="resource\shader\vertexShader.glsl">
-      <Filter>资源文件\Shader</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="resource\texture\wall.jpg">
+    <Font Include="resource\font\NotoSansCJK-Regular.ttc">
+      <Filter>资源文件\Font</Filter>
+    </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resource\texture\awesomeface.png">
       <Filter>资源文件\Texture</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="resource\texture\awesomeface.png">
+    </Image>
+    <Image Include="resource\texture\Back.1536x1536.png">
       <Filter>资源文件\Texture</Filter>
-    </CopyFileToFolders>
+    </Image>
+    <Image Include="resource\texture\Bottom.1536x1536.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube00.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube01.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube02.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube03.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube04.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\cube05.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\Left.1536x1536.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\Right.1536x1536.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\Seas0.1536x1536.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\Top.1536x1536.png">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+    <Image Include="resource\texture\wall.jpg">
+      <Filter>资源文件\Texture</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resource\shader\fragmentShader.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
+    <None Include="resource\shader\fragmentShaderColor.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
+    <None Include="resource\shader\fragmentShaderText.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
+    <None Include="resource\shader\vertexShader.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
+    <None Include="resource\shader\vertexShaderColor.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
+    <None Include="resource\shader\vertexShaderText.glsl">
+      <Filter>资源文件\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
